@@ -11,6 +11,7 @@
 #include "llvm/Transforms/Utils/Cloning.h"
 #include "taichi/analysis/offline_cache_util.h"
 #include "taichi/common/cleanup.h"
+#include "taichi/common/logging.h"
 #include "taichi/common/version.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/program/kernel.h"
@@ -115,7 +116,7 @@ bool LlvmOfflineCacheFileReader::load_meta_data(
   using offline_cache::load_metadata_with_checking;
   using Error = offline_cache::LoadMetadataError;
   const auto tcb_path = get_llvm_cache_metadata_file_path(cache_file_path);
-
+  TI_DEBUG("load tcb from path: {}, cache_file_path = {} ",tcb_path,cache_file_path);
   if (!taichi::path_exists(tcb_path)) {
     TI_DEBUG("File {} not found", tcb_path);
     return false;

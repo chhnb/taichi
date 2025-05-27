@@ -1,4 +1,5 @@
 #include "taichi/runtime/gfx/runtime.h"
+#include "taichi/common/logging.h"
 #include "taichi/program/program.h"
 #include "taichi/common/filesystem.hpp"
 
@@ -226,13 +227,17 @@ CompiledTaichiKernel::CompiledTaichiKernel(const Params &ti_params)
   input_buffers_[BufferType::GlobalTmps] = ti_params.global_tmps_buffer;
   input_buffers_[BufferType::ListGen] = ti_params.listgen_buffer;
 
+  
   // Compiled_structs can be empty if loading a kernel from an AOT module as
   // the SNode are not re-compiled/structured. In this case, we assume a
   // single root buffer size configured from the AOT module.
+  TI_DEBUG("ti_params.num_snode_trees: {}",ti_params.num_snode_trees);
+  TI_DEBUG("root_buffers len: {}",ti_params.root_buffers.size());
   for (int root = 0; root < ti_params.num_snode_trees; ++root) {
     BufferInfo buffer = {BufferType::Root, root};
     input_buffers_[buffer] = ti_params.root_buffers[root];
   }
+  TI_DEBUG("Into init CompiledTaichiKernel");
 
   const auto arg_sz = ti_kernel_attribs_.ctx_attribs.args_bytes();
   const auto ret_sz = ti_kernel_attribs_.ctx_attribs.rets_bytes();
@@ -242,8 +247,8 @@ CompiledTaichiKernel::CompiledTaichiKernel(const Params &ti_params)
 
   const auto &task_attribs = ti_kernel_attribs_.tasks_attribs;
   const auto &spirv_bins = ti_params.spirv_bins;
+  TI_DEBUG("task_attribs size: {}, spirv_bins: {}",task_attribs.size(),spirv_bins.size());
   TI_ASSERT(task_attribs.size() == spirv_bins.size());
-
   for (int i = 0; i < task_attribs.size(); ++i) {
     PipelineSourceDesc source_desc{PipelineSourceType::spirv_binary,
                                    (void *)spirv_bins[i].data(),
@@ -325,9 +330,9 @@ GfxRuntime::~GfxRuntime() {
 
 GfxRuntime::KernelHandle GfxRuntime::register_taichi_kernel(
     GfxRuntime::RegisterParams reg_params) {
-  CompiledTaichiKernel::Params params;
-  params.ti_kernel_attribs = &(reg_params.kernel_attribs);
-  params.num_snode_trees = reg_params.num_snode_trees;
+      CompiledTaichiKernel::Params params;
+      params.ti_kernel_attribs = &(reg_params.kernel_attribs);
+      params.num_snode_trees = reg_params.num_snode_trees;
   params.device = device_;
   params.root_buffers = {};
   for (int root = 0; root < root_buffers_.size(); ++root) {
@@ -336,10 +341,11 @@ GfxRuntime::KernelHandle GfxRuntime::register_taichi_kernel(
   params.global_tmps_buffer = global_tmps_buffer_.get();
   params.listgen_buffer = listgen_buffer_.get();
   params.backend_cache = backend_cache_.get();
-
+  
+  TI_DEBUG("Into register_taichi_kernel");
+  TI_DEBUG("SIZE: {}",reg_params.task_spirv_source_codes.size());
   for (int i = 0; i < reg_params.task_spirv_source_codes.size(); ++i) {
     const auto &spirv_src = reg_params.task_spirv_source_codes[i];
-
     // If we can reach here, we have succeeded. Otherwise
     // std::optional::value() would have killed us.
     params.spirv_bins.push_back(std::move(spirv_src));
@@ -370,10 +376,10 @@ void GfxRuntime::launch_kernel(KernelHandle handle,
     }
   }
 #endif
-
+  // 初始化参数和返回值缓冲区的指针。
   std::unique_ptr<DeviceAllocationGuard> args_buffer{nullptr},
       ret_buffer{nullptr};
-
+  TI_DEBUG("ti_kernel buffer size : {}",ti_kernel->get_args_buffer_size());
   if (ti_kernel->get_args_buffer_size()) {
     auto [buf, res] = device_->allocate_memory_unique(
         {ti_kernel->get_args_buffer_size(),
@@ -424,18 +430,19 @@ void GfxRuntime::launch_kernel(KernelHandle handle,
     for (auto &kv : args) {
       const auto &indices = kv.first;
       const auto &arg = kv.second;
+      TI_DEBUG("indices: {},arg : {} ,arrary? : {} ",indices[0],arg.name,arg.is_array);
       if (arg.is_array) {
         if (host_ctx.device_allocation_type[indices] !=
-            LaunchContextBuilder::DevAllocType::kNone) {
-          DeviceAllocation devalloc = kDeviceNullAllocation;
-          auto data_ptr_indices = indices;
-          data_ptr_indices.push_back(TypeFactory::DATA_PTR_POS_IN_NDARRAY);
-          // NDArray
-          if (host_ctx.array_ptrs.count(data_ptr_indices)) {
-            devalloc =
-                *(DeviceAllocation *)(host_ctx.array_ptrs[data_ptr_indices]);
-          }
-          // Texture
+          LaunchContextBuilder::DevAllocType::kNone) {
+        DeviceAllocation devalloc = kDeviceNullAllocation;
+        auto data_ptr_indices = indices;
+        data_ptr_indices.push_back(TypeFactory::DATA_PTR_POS_IN_NDARRAY);
+        // NDArray
+        if (host_ctx.array_ptrs.count(data_ptr_indices)) {
+          devalloc =
+              *(DeviceAllocation *)(host_ctx.array_ptrs[data_ptr_indices]);
+        }
+        // Texture
           if (host_ctx.array_ptrs.count(indices)) {
             devalloc = *(DeviceAllocation *)(host_ctx.array_ptrs[indices]);
           }
@@ -728,6 +735,7 @@ void GfxRuntime::init_nonroot_buffers() {
 }
 
 void GfxRuntime::add_root_buffer(size_t root_buffer_size) {
+  TI_DEBUG("add_root_buffer: {}", root_buffer_size);
   if (root_buffer_size == 0) {
     root_buffer_size = 4;  // there might be empty roots
   }
