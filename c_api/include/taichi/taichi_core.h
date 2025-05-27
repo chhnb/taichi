@@ -236,6 +236,8 @@
 #endif  // TAICHI_H
 
 #include "taichi/program/compile_config.h"  
+#include "taichi/rhi/arch.h"
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -1110,31 +1112,19 @@ TI_DLL_EXPORT TiComputeGraph TI_API_CALL
 ti_get_aot_module_compute_graph(TiAotModule aot_module, const char *name);
 
 
+// compile config
 TI_DLL_EXPORT taichi::lang::CompileConfig* TI_API_CALL ti_default_compile_config();
-
 TI_DLL_EXPORT int TI_API_CALL ti_get_primitive_type_by_name(const char* type_name);
 TI_DLL_EXPORT void ti_set_default_fp(taichi::lang::CompileConfig* config, int primitive_type_id);
 TI_DLL_EXPORT void ti_set_default_ip(taichi::lang::CompileConfig* config, int primitive_type_id);
 TI_DLL_EXPORT void ti_set_default_up(taichi::lang::CompileConfig* config, int primitive_type_id);
 
 
-typedef enum Arch {  
-  ARCH_X64 = 0,  
-  ARCH_ARM64 = 1,  
-  ARCH_JS = 2,  
-  ARCH_CUDA = 3,  
-  ARCH_METAL = 4,  
-  ARCH_OPENGL = 5,  
-  ARCH_DX11 = 6,  
-  ARCH_DX12 = 7,  
-  ARCH_OPENCL = 8,  
-  ARCH_AMDGPU = 9,  
-  ARCH_VULKAN = 10,  
-  ARCH_GLES = 11,  
-} Arch;  
+// Arch
+TI_DLL_EXPORT const char* TI_API_CALL ti_get_arch_name(taichi::Arch arch); 
+TI_DLL_EXPORT taichi::Arch TI_API_CALL ti_get_arch_from_name(const char* name);  
+TI_DLL_EXPORT taichi::Arch TI_API_CALL ti_host_arch();
 
-TI_DLL_EXPORT const char* TI_API_CALL ti_get_arch_name(Arch arch); 
-TI_DLL_EXPORT Arch TI_API_CALL ti_get_arch_from_name(const char* name);  
 
 #ifdef __cplusplus
 }  // extern "C"
