@@ -1,4 +1,5 @@
 #include "taichi/program/callable.h"
+#include "taichi/common/logging.h"
 #include "taichi/ir/type.h"
 #include "taichi/program/program.h"
 
@@ -13,6 +14,7 @@ std::vector<int> Callable::insert_scalar_param(const DataType &dt,
   auto p = Parameter(dt->get_compute_type(), /*is_array=*/false);
   p.name = name;
   p.ptype = ParameterType::kScalar;
+  TI_DEBUG("Into insert_scalar_param,name: {}", name);
   return add_parameter(p);
 }
 
@@ -139,12 +141,70 @@ std::vector<int> Callable::add_parameter(const Parameter &param) {
     parameter_list.push_back(param);
     auto indices = std::vector<int>{(int)parameter_list.size() - 1};
     nested_parameters[indices] = param;
+    // 遍历 nested_parameters 并输出参数类型和名称
+    TI_DEBUG("当前所有参数信息:");
+    for (const auto &pair : nested_parameters) {
+      const auto &indices = pair.first;
+      const auto &parameter = pair.second;
+
+      // 构建参数索引字符串
+      std::string indices_str = "[";
+      for (size_t i = 0; i < indices.size(); ++i) {
+        indices_str += std::to_string(indices[i]);
+        if (i < indices.size() - 1) {
+          indices_str += ", ";
+        }
+      }
+      indices_str += "]";
+
+      // 获取参数类型名称
+      std::string type_name;
+      if (parameter.get_dtype()) {
+        type_name = parameter.get_dtype()->to_string();
+      } else {
+        type_name = "未知类型";
+      }
+
+      // 输出参数信息
+      TI_DEBUG("参数索引: {}, 名称: {}, 类型: {}", indices_str, parameter.name,
+               type_name);
+    }
     return indices;
   }
   temp_argpack_stack_.top().push_back(param);
   std::vector<int> ret = temp_indices_stack_;
   ret.push_back(temp_argpack_stack_.top().size() - 1);
   nested_parameters[ret] = param;
+
+  // 遍历 nested_parameters 并输出参数类型和名称
+  TI_DEBUG("当前所有参数信息:");
+  for (const auto &pair : nested_parameters) {
+    const auto &indices = pair.first;
+    const auto &parameter = pair.second;
+
+    // 构建参数索引字符串
+    std::string indices_str = "[";
+    for (size_t i = 0; i < indices.size(); ++i) {
+      indices_str += std::to_string(indices[i]);
+      if (i < indices.size() - 1) {
+        indices_str += ", ";
+      }
+    }
+    indices_str += "]";
+
+    // 获取参数类型名称
+    std::string type_name;
+    if (parameter.get_dtype()) {
+      type_name = parameter.get_dtype()->to_string();
+    } else {
+      type_name = "未知类型";
+    }
+
+    // 输出参数信息
+    TI_DEBUG("参数索引: {}, 名称: {}, 类型: {}", indices_str, parameter.name,
+             type_name);
+  }
+
   return ret;
 }
 

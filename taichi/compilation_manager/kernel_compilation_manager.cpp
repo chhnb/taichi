@@ -1,7 +1,9 @@
 #include "taichi/compilation_manager/kernel_compilation_manager.h"
+#include <iostream>
 
 #include "taichi/analysis/offline_cache_util.h"
 #include "taichi/codegen/compiled_kernel_data.h"
+#include "taichi/common/logging.h"
 #include "taichi/util/offline_cache.h"
 
 namespace taichi::lang {
@@ -76,6 +78,10 @@ const CompiledKernelData &KernelCompilationManager::load_or_compile(
   const auto kernel_key = make_kernel_key(compile_config, caps, kernel_def);
   auto cached_kernel = try_load_cached_kernel(kernel_def, kernel_key,
                                               compile_config.arch, cache_mode);
+  if (cached_kernel) {
+    TI_DEBUG("Load cached kernel(kernel_key={})", kernel_key);
+    // cached_kernel->debug_print(std::cout);  // 使用 std::cout 作为输出流
+  }                    
   return cached_kernel ? *cached_kernel
                        : compile_and_cache_kernel(kernel_key, compile_config,
                                                   caps, kernel_def);
@@ -89,6 +95,7 @@ void KernelCompilationManager::dump() {
   taichi::create_directories(config_.offline_cache_path);
   auto filepath = join_path(config_.offline_cache_path, kMetadataFilename);
   auto lock_path = join_path(config_.offline_cache_path, kMetadataLockName);
+  TI_DEBUG("Dumping offline cache metadata to {}",filepath);
 
   if (!lock_with_file(lock_path)) {
     TI_WARN("Lock {} failed. Please run 'ti cache clean -p {}' and try again.",
@@ -125,6 +132,7 @@ void KernelCompilationManager::dump() {
   for (auto &[_, k] : kernels) {
     if (k.compiled_kernel_data) {
       auto cache_filename = make_filename(k.kernel_key);
+      TI_DEBUG("cache filename: {}",cache_filename);
       std::ofstream fs{cache_filename, std::ios::out | std::ios::binary};
       TI_ASSERT(fs.is_open());
       auto err = k.compiled_kernel_data->dump(fs);
@@ -172,7 +180,10 @@ std::unique_ptr<CompiledKernelData> KernelCompilationManager::compile_kernel(
     const Kernel &kernel_def) const {
   auto &compiler = *config_.kernel_compiler;
   auto ir = compiler.compile(compile_config, kernel_def);
+  TI_DEBUG("Comile AST to CHI IR");
   auto ckd = compiler.compile(compile_config, caps, kernel_def, *ir);
+  TI_DEBUG("Comile CHI IR to CompiledKernelData");
+  // ckd->debug_print(std::cout);
   TI_ASSERT(ckd->check() == CompiledKernelData::Err::kNoError);
   return ckd;
 }
@@ -238,10 +249,13 @@ const CompiledKernelData &KernelCompilationManager::compile_and_cache_kernel(
     const CompileConfig &compile_config,
     const DeviceCapabilityConfig &caps,
     const Kernel &kernel_def) {
-  auto cache_mode = get_cache_mode(compile_config, kernel_def);
+  const auto filename = make_filename(kernel_key);
+  TI_DEBUG("Filename: {}",filename);
+      auto cache_mode = get_cache_mode(compile_config, kernel_def);
   TI_DEBUG_IF(cache_mode == CacheData::MemAndDiskCache,
               "Cache kernel '{}' (key='{}')", kernel_def.get_name(),
               kernel_key);
+  TI_DEBUG("Cache kernel '{}' (key='{}')", kernel_def.get_name(),kernel_key);
   TI_ASSERT(caching_kernels_.find(kernel_key) == caching_kernels_.end());
   KernelCacheData k;
   k.kernel_key = kernel_key;
@@ -252,7 +266,7 @@ const CompiledKernelData &KernelCompilationManager::compile_and_cache_kernel(
   const auto &kernel_data = (caching_kernels_[kernel_key] = std::move(k));
   return *kernel_data.compiled_kernel_data;
 }
-
+  
 std::unique_ptr<CompiledKernelData> KernelCompilationManager::load_ckd(
     const std::string &kernel_key,
     Arch arch) {
