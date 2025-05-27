@@ -1,5 +1,6 @@
 #pragma once
 
+#include "taichi/codegen/compiled_kernel_data.h"
 #include "taichi/util/lang_util.h"
 #include "taichi/ir/snode.h"
 #include "taichi/ir/ir.h"
@@ -35,6 +36,11 @@ class TI_DLL_EXPORT Kernel : public Callable {
          const std::string &name = "",
          AutodiffMode autodiff_mode = AutodiffMode::kNone);
 
+  Kernel(Program &program,
+         std::unique_ptr<CompiledKernelData> &&ckd,
+         const std::string &kernel_key = "",
+         const std::string &name = "",
+         AutodiffMode autodiff_mode = AutodiffMode::kNone);
   bool ir_is_ast() const {
     return ir_is_ast_;
   }
