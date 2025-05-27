@@ -1,10 +1,16 @@
 // Program, context for Taichi program execution
 
 #include "program.h"
+#include <memory>
+#include <utility>
 
+#include "taichi/common/logging.h"
+#include "taichi/ir/ir.h"
 #include "taichi/ir/statements.h"
 #include "taichi/program/extension.h"
 #include "taichi/codegen/cpu/codegen_cpu.h"
+#include "taichi/rhi/arch.h"
+#include "taichi/codegen/spirv/compiled_kernel_data.h"
 #include "taichi/struct/struct.h"
 #include "taichi/runtime/program_impls/opengl/opengl_program.h"
 #include "taichi/runtime/program_impls/metal/metal_program.h"
@@ -181,9 +187,37 @@ const CompiledKernelData &Program::compile_kernel(
     const Kernel &kernel_def) {
   auto start_t = Time::get_time();
   TI_AUTO_PROF;
+  TI_DEBUG("Starting kernel compilation...");
   auto &mgr = program_impl_->get_kernel_compilation_manager();
   const auto &ckd = mgr.load_or_compile(compile_config, caps, kernel_def);
   total_compilation_time_ += Time::get_time() - start_t;
+  TI_DEBUG("Kernel compilation time: {}ms,Kernel name: {}",
+           total_compilation_time_, kernel_def.name);
+  if (arch_uses_llvm(ckd.arch())) {
+    // 对于 LLVM 后端
+    auto *llvm_ckd = dynamic_cast<const LLVM::CompiledKernelData *>(&ckd);
+    if (llvm_ckd) {
+      const auto &args = llvm_ckd->get_internal_data().args;
+      for (const auto &arg : args) {
+        // 处理每个参数
+        // 示例：打印参数信息
+        TI_DEBUG("Arg indices: {:{}}, Param name: {}",
+                 fmt::join(arg.first, ", "), arg.first.size(), arg.second.name);
+      }
+    }
+  } else {
+    // 对于图形后端
+    auto *spirv_ckd =
+        dynamic_cast<const taichi::lang::spirv::CompiledKernelData *>(&ckd);
+    if (spirv_ckd) {
+      const auto &args = spirv_ckd->get_internal_data()
+                             .metadata.kernel_attribs.ctx_attribs.args();
+      for (const auto &arg : args) {
+        TI_DEBUG("Arg indices: {:{}}, Param name: {}",
+                 fmt::join(arg.first, ", "), arg.first.size(), arg.second.name);
+      }
+    }
+  }
   return ckd;
 }
 
@@ -192,6 +226,104 @@ void Program::launch_kernel(const CompiledKernelData &compiled_kernel_data,
   program_impl_->get_kernel_launcher().launch_kernel(compiled_kernel_data, ctx);
   if (compile_config().debug && arch_uses_llvm(compiled_kernel_data.arch())) {
     program_impl_->check_runtime_error(result_buffer);
+  }
+}
+
+
+Kernel* Program::get_kernel(const std::string &kernel_key,
+                         const std::string &kernel_name,
+                         Arch arch) {
+  const auto filename = join_path(compile_config_.offline_cache_file_path,
+                                  fmt::format("{}.tic", kernel_key));
+  TI_DEBUG("Into offline kernel launch");
+  if (std::ifstream ifs(filename, std::ios::in | std::ios::binary);
+      ifs.is_open()) {
+    CompiledKernelData::Err err;
+    auto ckd = CompiledKernelData::load(ifs, &err);
+    if (err != CompiledKernelData::Err::kNoError) {
+      TI_DEBUG("Load cache file {} failed: {}", filename,
+               CompiledKernelData::get_err_msg(err));
+      return nullptr;
+    }
+    if (auto check_err = ckd->check();
+        check_err != CompiledKernelData::Err::kNoError) {
+      TI_DEBUG("Check CompiledKernelData loaded from {} failed: {}", filename,
+               CompiledKernelData::get_err_msg(check_err));
+      return nullptr;
+    }
+    std::unique_ptr<CompiledKernelData> cloned_ckd = ckd->clone();
+    auto k = std::make_unique<Kernel>(*this, std::move(cloned_ckd), kernel_key,
+                                      kernel_name, AutodiffMode::kNone);
+    kernels.push_back(std::move(k));\
+    return kernels.back().get();
+  }
+  TI_ERROR("Not found file: {}",filename);
+  return nullptr;
+}
+void Program::launch_offline_kernel(const std::string &kernel_key,
+                                    const std::string &kernel_name,
+                                    Arch arch,
+                                    LaunchContextBuilder &ctx) {
+  const auto filename = join_path(compile_config_.offline_cache_file_path,
+                                  fmt::format("{}.tic", kernel_key));
+  TI_DEBUG("Into offline kernel launch");
+  if (std::ifstream ifs(filename, std::ios::in | std::ios::binary);
+      ifs.is_open()) {
+    CompiledKernelData::Err err;
+    auto ckd = CompiledKernelData::load(ifs, &err);
+    if (err != CompiledKernelData::Err::kNoError) {
+      TI_DEBUG("Load cache file {} failed: {}", filename,
+               CompiledKernelData::get_err_msg(err));
+      return;
+    }
+    if (auto check_err = ckd->check();
+        check_err != CompiledKernelData::Err::kNoError) {
+      TI_DEBUG("Check CompiledKernelData loaded from {} failed: {}", filename,
+               CompiledKernelData::get_err_msg(check_err));
+      return;
+    }
+    std::unique_ptr<CompiledKernelData> cloned_ckd = ckd->clone();
+    auto k = std::make_unique<Kernel>(*this, std::move(cloned_ckd), kernel_key,
+                                      kernel_name, AutodiffMode::kNone);
+    kernels.push_back(std::move(k));
+    launch_kernel(*ckd.get(), ctx);
+    if (arch_uses_llvm(ckd->arch())) {
+      // 对于 LLVM 后端
+      auto *llvm_ckd =
+          dynamic_cast<const LLVM::CompiledKernelData *>(ckd.get());
+      if (llvm_ckd) {
+        // 使用 LLVM::CompiledKernelData 特有的方法
+        TI_DEBUG("Loaded LLVM kernel: {}", kernel_key);
+        const auto &args = llvm_ckd->get_internal_data().args;
+        for (const auto &arg : args) {
+          // 处理每个参数
+          // 示例：打印参数信息
+          TI_DEBUG("Arg indices: {:{}}, Param name: {}",
+                   fmt::join(arg.first, ", "), arg.first.size(),
+                   arg.second.name);
+        }
+      }
+
+    } else {
+      // 对于图形后端
+      auto *spirv_ckd =
+          dynamic_cast<const taichi::lang::spirv::CompiledKernelData *>(
+              ckd.get());
+      if (spirv_ckd) {
+        // 使用 spirv::CompiledKernelData 特有的方法
+        TI_DEBUG("Loaded SPIRV kernel: {}", kernel_key);
+        const auto &args = spirv_ckd->get_internal_data()
+                               .metadata.kernel_attribs.ctx_attribs.args();
+        for (const auto &arg : args) {
+          TI_DEBUG("Arg indices: {:{}}, Param name: {}",
+                   fmt::join(arg.first, ", "), arg.first.size(),
+                   arg.second.name);
+        }
+      }
+    }
+
+  } else {
+    TI_DEBUG("Offline kernel cache file not found: {}", filename);
   }
 }
 
