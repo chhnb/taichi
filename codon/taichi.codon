@@ -1,6 +1,6 @@
 from internal.types.optional import unwrap  
 
-LIBRARY = "/home/chh/taichi/_skbuild/linux-x86_64-3.10/cmake-install/python/taichi/_lib/c_api/lib/libtaichi_c_api.so"  
+from lib import LIBRARY
 from C import LIBRARY.ti_set_arch(Ptr[byte],int) -> None
 from C import LIBRARY.ti_set_offline_cache(Ptr[byte],bool) -> None
 from C import LIBRARY.ti_set_logging_level(Ptr[byte]) -> None

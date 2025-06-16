@@ -1,5 +1,4 @@
-
-LIBRARY = "/home/chh/taichi/_skbuild/linux-x86_64-3.10/cmake-install/python/taichi/_lib/c_api/lib/libtaichi_c_api.so"  
+from lib import LIBRARY
 DEBUG = "debug"
 """The `str` 'debug', used for the `debug` logging level.
 """

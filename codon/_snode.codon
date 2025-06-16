@@ -1,0 +1,35 @@
+from lib import LIBRARY
+from C import LIBRARY.ti_snode_tree_id(Ptr[byte]) -> int
+from C import LIBRARY.ti_destroy_snode_tree(Ptr[byte],Ptr[byte]) -> None
+from C import LIBRARY.ti_create_snode_registry() -> Ptr[byte]
+import impl
+_snode_registry = ti_create_snode_registry()
+
+class SNodeTree:
+    prog: Ptr[byte]
+    ptr: Ptr[byte]
+    destroyed: bool
+    def __init__(self, ptr):
+        self.prog = impl.get_runtime().prog
+        self.ptr = ptr
+        self.destroyed = False
+
+    def destroy(self):
+        if self.destroyed:
+            raise RuntimeError("SNode tree has been destroyed")
+        if self.prog != impl.get_runtime().prog:
+            return
+        
+        ti_destroy_snode_tree(self.ptr,impl.get_runtime().prog)
+
+        # FieldExpression holds a SNode* to the place-SNode associated with a SNodeTree
+        # Therefore, we have to recompile all the kernels after destroying a SNodeTree
+
+        # impl.get_runtime().clear_compiled_functions()
+        self.destroyed = True
+
+    @property
+    def id(self):
+        if self.destroyed:
+            raise RuntimeError("SNode tree has been destroyed")
+        return ti_snode_tree_id(self.ptr)

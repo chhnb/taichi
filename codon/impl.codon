@@ -1,4 +1,4 @@
-LIBRARY = "/home/chh/taichi/_skbuild/linux-x86_64-3.10/cmake-install/python/taichi/_lib/c_api/lib/libtaichi_c_api.so"  
+from lib import LIBRARY
 from C import LIBRARY.ti_default_compile_config()->ptr[byte]
 from C import LIBRARY.ti_set_default_fp(Ptr[byte],int) -> None
 from C import LIBRARY.ti_set_default_ip(Ptr[byte],int) -> None
