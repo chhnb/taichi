@@ -227,6 +227,9 @@
 #pragma once
 
 #include "taichi/common/platform_macros.h"
+#include "taichi/ir/snode.h"
+#include "taichi/program/snode_registry.h"
+#include "taichi/struct/snode_tree.h"
 #include "taichi/taichi_platform.h"
 #ifndef TI_C_API_VERSION
 #define TI_C_API_VERSION 1007000

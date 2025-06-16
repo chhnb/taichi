@@ -1,4 +1,4 @@
-#include "taichi/python/snode_registry.h"
+#include "taichi/program/snode_registry.h"
 
 #include "taichi/common/logging.h"
 #include "taichi/ir/snode.h"

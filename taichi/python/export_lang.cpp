@@ -25,7 +25,7 @@
 #include "taichi/python/export.h"
 #include "taichi/math/svd.h"
 #include "taichi/system/timeline.h"
-#include "taichi/python/snode_registry.h"
+#include "taichi/program/snode_registry.h"
 #include "taichi/program/sparse_matrix.h"
 #include "taichi/program/sparse_solver.h"
 #include "taichi/program/conjugate_gradient.h"
