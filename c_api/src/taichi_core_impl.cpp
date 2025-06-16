@@ -1219,3 +1219,66 @@ int ti_get_primitive_type_by_name(const char* type_name) {
   TI_CAPI_TRY_CATCH_END();  
   return -1;  
 }
+
+TI_DLL_EXPORT taichi::lang::Program* TI_API_CALL ti_create_program(){
+  return new taichi::lang::Program();
+}
+
+
+TI_DLL_EXPORT void TI_API_CALL ti_set_logging_level(const char* level) {  
+  TI_CAPI_TRY_CATCH_BEGIN();  
+  TI_CAPI_ARGUMENT_NULL(level);  
+    
+  std::string level_str(level);  
+  taichi::Logger::get_instance().set_level(level_str);  
+    
+  TI_CAPI_TRY_CATCH_END();  
+} 
+
+TI_DLL_EXPORT void TI_API_CALL ti_log_trace(const char* message) {  
+  TI_CAPI_TRY_CATCH_BEGIN();  
+  TI_CAPI_ARGUMENT_NULL(message);  
+  taichi::Logger::get_instance().trace(message);  
+  TI_CAPI_TRY_CATCH_END();  
+}  
+  
+TI_DLL_EXPORT void TI_API_CALL ti_log_debug(const char* message) {  
+  TI_CAPI_TRY_CATCH_BEGIN();  
+  TI_CAPI_ARGUMENT_NULL(message);  
+  taichi::Logger::get_instance().debug(message);  
+  TI_CAPI_TRY_CATCH_END();  
+}  
+  
+TI_DLL_EXPORT void TI_API_CALL ti_log_info(const char* message) {  
+  TI_CAPI_TRY_CATCH_BEGIN();  
+  TI_CAPI_ARGUMENT_NULL(message);  
+  taichi::Logger::get_instance().info(message);  
+  TI_CAPI_TRY_CATCH_END();  
+}  
+  
+TI_DLL_EXPORT void TI_API_CALL ti_log_warn(const char* message) {  
+  TI_CAPI_TRY_CATCH_BEGIN();  
+  TI_CAPI_ARGUMENT_NULL(message);  
+  taichi::Logger::get_instance().warn(message);  
+  TI_CAPI_TRY_CATCH_END();  
+}  
+  
+TI_DLL_EXPORT void TI_API_CALL ti_log_error(const char* message) {  
+  TI_CAPI_TRY_CATCH_BEGIN();  
+  TI_CAPI_ARGUMENT_NULL(message);  
+  taichi::Logger::get_instance().error(message, false); // 不抛异常  
+  TI_CAPI_TRY_CATCH_END();  
+}  
+  
+TI_DLL_EXPORT void TI_API_CALL ti_log_critical(const char* message) {  
+  TI_CAPI_TRY_CATCH_BEGIN();  
+  TI_CAPI_ARGUMENT_NULL(message);  
+  taichi::Logger::get_instance().critical(message);  
+  TI_CAPI_TRY_CATCH_END();  
+}  
+  
+TI_DLL_EXPORT void TI_API_CALL ti_log_flush() {  
+  TI_CAPI_TRY_CATCH_BEGIN();  
+  taichi::Logger::get_instance().flush();  
+  TI_CAPI_TRY_CATCH_END();  
+}

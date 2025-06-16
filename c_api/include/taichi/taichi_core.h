@@ -1126,6 +1126,20 @@ TI_DLL_EXPORT taichi::Arch TI_API_CALL ti_get_arch_from_name(const char* name);
 TI_DLL_EXPORT taichi::Arch TI_API_CALL ti_host_arch();
 
 
+// Program
+TI_DLL_EXPORT taichi::lang::Program* TI_API_CALL ti_create_program();
+
+
+// logger
+TI_DLL_EXPORT void TI_API_CALL ti_set_logging_level(const char* level);
+TI_DLL_EXPORT void TI_API_CALL ti_log_trace(const char* message);
+TI_DLL_EXPORT void TI_API_CALL ti_log_debug(const char* message);
+TI_DLL_EXPORT void TI_API_CALL ti_log_info(const char* message);
+TI_DLL_EXPORT void TI_API_CALL ti_log_warn(const char* message);
+TI_DLL_EXPORT void TI_API_CALL ti_log_error(const char* message);
+TI_DLL_EXPORT void TI_API_CALL ti_log_critical(const char* message);
+TI_DLL_EXPORT void TI_API_CALL ti_log_flush();
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus
