@@ -1,5 +1,23 @@
 #include "taichi_core_impl.h"
 #include <string>
+#include "taichi/common/core.h"
+#include "taichi/common/platform_macros.h"
+#include "taichi/platform/cuda/detect_cuda.h"
+#include "taichi/platform/amdgpu/detect_amdgpu.h"
+#include "taichi/rhi/metal/metal_api.h"
+
+#ifdef TI_WITH_OPENGL
+#include "taichi/rhi/opengl/opengl_api.h"
+#endif
+#ifdef TI_WITH_VULKAN
+#include "taichi/rhi/vulkan/vulkan_loader.h"
+#endif
+
+#ifdef TI_WITH_DX12
+#include "taichi/rhi/dx12/dx12_api.h"
+#endif
+
+
 #include "taichi/rhi/arch.h"
 #include "taichi_opengl_impl.h"
 #include "taichi_vulkan_impl.h"
@@ -1183,6 +1201,19 @@ void ti_set_default_up(taichi::lang::CompileConfig* config, int primitive_type_i
     
   TI_CAPI_TRY_CATCH_END();  
 }
+
+
+TI_DLL_EXPORT void ti_set_offline_cache(taichi::lang::CompileConfig* config,bool enable) {
+  config->offline_cache = enable;
+}
+TI_DLL_EXPORT void ti_set_arch(taichi::lang::CompileConfig* config, taichi::Arch arch){
+  config->arch = arch;
+}
+
+TI_DLL_EXPORT void ti_set_core_trigger_gdb_when_crash(bool val) {
+  taichi::CoreState::set_trigger_gdb_when_crash(val); 
+}
+
 int ti_get_primitive_type_by_name(const char* type_name) {  
   TI_CAPI_TRY_CATCH_BEGIN();  
   std::string name(type_name);  
@@ -1223,6 +1254,11 @@ int ti_get_primitive_type_by_name(const char* type_name) {
 TI_DLL_EXPORT taichi::lang::Program* TI_API_CALL ti_create_program(){
   return new taichi::lang::Program();
 }
+
+TI_DLL_EXPORT void TI_API_CALL ti_materialize_runtime(taichi::lang::Program* prog){
+  prog->get_program_impl()->materialize_runtime(prog->profiler.get(), &prog->result_buffer);
+}
+
 
 
 TI_DLL_EXPORT void TI_API_CALL ti_set_logging_level(const char* level) {  
@@ -1281,4 +1317,53 @@ TI_DLL_EXPORT void TI_API_CALL ti_log_flush() {
   TI_CAPI_TRY_CATCH_BEGIN();  
   taichi::Logger::get_instance().flush();  
   TI_CAPI_TRY_CATCH_END();  
+}
+
+
+TI_DLL_EXPORT bool TI_API_CALL ti_with_cuda(){
+ return taichi::is_cuda_api_available(); 
+}
+
+TI_DLL_EXPORT bool TI_API_CALL ti_with_amdgpu(){
+  return taichi::is_rocm_api_available();
+}
+
+TI_DLL_EXPORT bool TI_API_CALL ti_with_metal(){  
+#ifdef TI_WITH_METAL  
+   return taichi::lang::metal::is_metal_api_available();  
+#else  
+    return false;  
+#endif  
+}
+
+TI_DLL_EXPORT bool TI_API_CALL ti_with_opengl(bool use_gles) {
+  #ifdef TI_WITH_OPENGL 
+    return taichi::lang::opengl::is_opengl_api_available(use_gles);
+  #else
+    return false;
+  #endif
+}
+
+TI_DLL_EXPORT bool TI_API_CALL ti_with_vulkan(){
+  #ifdef TI_WITH_VULKAN 
+    return taichi::lang::vulkan::is_vulkan_api_available();
+  #else
+    return false;
+  #endif
+}
+
+TI_DLL_EXPORT bool TI_API_CALL ti_with_dx11(){
+  #ifdef TI_WITH_DX11 
+    return taichi::lang::dx11::is_dx11_api_available();
+  #else
+    return false;
+  #endif
+}
+
+TI_DLL_EXPORT bool TI_API_CALL ti_with_dx12(){
+  #ifdef TI_WITH_DX12 
+    return taichi::lang::dx12::is_dx12_api_available();
+  #else
+    return false;
+  #endif
 }
