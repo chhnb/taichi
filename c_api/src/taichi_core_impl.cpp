@@ -1183,15 +1183,15 @@ void ti_set_default_up(taichi::lang::CompileConfig* config, int primitive_type_i
   }  
     
   // 转换为 PrimitiveTypeID  
-  auto type_id = static_cast<taichi::lang::PrimitiveTypeID>(primitive_type_id);  
+  auto type_id = static_cast<PrimitiveTypeID>(primitive_type_id);  
     
   // 获取对应的 DataType  
-  auto data_type = taichi::lang::PrimitiveType::get(type_id);  
+  auto data_type = PrimitiveType::get(type_id);  
     
   // 验证是否为浮点类型  
-  if (type_id != taichi::lang::PrimitiveTypeID::u16 &&   
-      type_id != taichi::lang::PrimitiveTypeID::u32 &&   
-      type_id != taichi::lang::PrimitiveTypeID::u64) {  
+  if (type_id != PrimitiveTypeID::u16 &&   
+      type_id != PrimitiveTypeID::u32 &&   
+      type_id != PrimitiveTypeID::u64) {  
     ti_set_last_error(TI_ERROR_INVALID_ARGUMENT, "Type must be a floating point type");  
     return;  
   }  
@@ -1251,11 +1251,11 @@ int ti_get_primitive_type_by_name(const char* type_name) {
   return -1;  
 }
 
-TI_DLL_EXPORT taichi::lang::Program* TI_API_CALL ti_create_program(){
-  return new taichi::lang::Program();
+TI_DLL_EXPORT Program* TI_API_CALL ti_create_program(){
+  return new Program();
 }
 
-TI_DLL_EXPORT void TI_API_CALL ti_materialize_runtime(taichi::lang::Program* prog){
+TI_DLL_EXPORT void TI_API_CALL ti_materialize_runtime(Program* prog){
   prog->get_program_impl()->materialize_runtime(prog->profiler.get(), &prog->result_buffer);
 }
 
@@ -1330,7 +1330,7 @@ TI_DLL_EXPORT bool TI_API_CALL ti_with_amdgpu(){
 
 TI_DLL_EXPORT bool TI_API_CALL ti_with_metal(){  
 #ifdef TI_WITH_METAL  
-   return taichi::lang::metal::is_metal_api_available();  
+   return metal::is_metal_api_available();  
 #else  
     return false;  
 #endif  
@@ -1338,7 +1338,7 @@ TI_DLL_EXPORT bool TI_API_CALL ti_with_metal(){
 
 TI_DLL_EXPORT bool TI_API_CALL ti_with_opengl(bool use_gles) {
   #ifdef TI_WITH_OPENGL 
-    return taichi::lang::opengl::is_opengl_api_available(use_gles);
+    return opengl::is_opengl_api_available(use_gles);
   #else
     return false;
   #endif
@@ -1346,7 +1346,7 @@ TI_DLL_EXPORT bool TI_API_CALL ti_with_opengl(bool use_gles) {
 
 TI_DLL_EXPORT bool TI_API_CALL ti_with_vulkan(){
   #ifdef TI_WITH_VULKAN 
-    return taichi::lang::vulkan::is_vulkan_api_available();
+    return vulkan::is_vulkan_api_available();
   #else
     return false;
   #endif
@@ -1354,7 +1354,7 @@ TI_DLL_EXPORT bool TI_API_CALL ti_with_vulkan(){
 
 TI_DLL_EXPORT bool TI_API_CALL ti_with_dx11(){
   #ifdef TI_WITH_DX11 
-    return taichi::lang::dx11::is_dx11_api_available();
+    return dx11::is_dx11_api_available();
   #else
     return false;
   #endif
@@ -1366,4 +1366,24 @@ TI_DLL_EXPORT bool TI_API_CALL ti_with_dx12(){
   #else
     return false;
   #endif
+}
+
+TI_DLL_EXPORT SNodeRegistry* TI_API_CALL ti_create_snode_registry(){
+  return new SNodeRegistry();
+}
+
+TI_DLL_EXPORT SNode*  TI_API_CALL ti_create_root(SNodeRegistry* registry,Program *prog) {
+  return registry->create_root(prog);
+}
+
+TI_DLL_EXPORT SNodeTree* TI_API_CALL ti_finalize_snode_tree(SNodeRegistry *registry, const SNode *root, Program *program, bool compile_only){
+    return program->add_snode_tree(registry->finalize(root), compile_only);
+}
+
+TI_DLL_EXPORT int TI_API_CALL ti_snode_tree_id(SNodeTree *snode_tree){
+  return snode_tree->id();
+}
+
+TI_DLL_EXPORT void TI_API_CALL ti_destroy_snode_tree(SNodeTree *snode_tree,Program *prog){
+  prog->destroy_snode_tree(snode_tree);
 }
