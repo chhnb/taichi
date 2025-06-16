@@ -1,0 +1,137 @@
+from internal.types.optional import unwrap  
+
+LIBRARY = "/home/chh/taichi/_skbuild/linux-x86_64-3.10/cmake-install/python/taichi/_lib/c_api/lib/libtaichi_c_api.so"  
+from C import LIBRARY.ti_set_arch(Ptr[byte],int) -> None
+from C import LIBRARY.ti_set_offline_cache(Ptr[byte],bool) -> None
+from C import LIBRARY.ti_set_logging_level(Ptr[byte]) -> None
+from C import LIBRARY.ti_set_offline_cache(Ptr[byte],bool) -> None
+from C import LIBRARY.ti_set_core_trigger_gdb_when_crash(bool) -> None
+from C import LIBRARY.ti_host_arch() -> int
+from C import LIBRARY.ti_materialize_runtime(Ptr[byte]) -> None
+import path
+import impl
+import _logging
+from types import DataType
+
+
+cpu = ti_host_arch()
+
+class Arch:
+    x64 = 0
+    arm64 = 1
+    js = 2
+    cuda = 3
+    metal = 4
+    opengl = 5
+    dx11 = 6
+    dx12 = 7
+    opencl = 8
+    amdgpu = 9
+    vulkan = 10
+    gles = 11
+
+x64 = Arch.x64
+arm64 = Arch.arm64
+js = Arch.js
+cuda = Arch.cuda
+metal = Arch.metal
+opengl = Arch.opengl
+dx11 = Arch.dx11
+dx12 = Arch.dx12
+opencl = Arch.opencl
+amdgpu = Arch.amdgpu
+vulkan = Arch.vulkan
+gles = Arch.gles
+
+
+def arch_name(arch):
+    """Returns the name of the given arch.
+
+    Args:
+        arch (Arch): The arch.
+
+    Returns:
+        str: The name of the arch.
+    """
+    from C import LIBRARY.ti_get_arch_name(int)->cobj
+    name = ti_get_arch_name(arch)
+    return str.from_ptr(name)
+
+from C import LIBRARY.ti_with_cuda() -> bool
+from C import LIBRARY.ti_with_amdgpu() -> bool  
+from C import LIBRARY.ti_with_metal() -> bool  
+from C import LIBRARY.ti_with_opengl(bool) -> bool  
+from C import LIBRARY.ti_with_vulkan() -> bool  
+from C import LIBRARY.ti_with_dx11() -> bool  
+from C import LIBRARY.ti_with_dx12() -> bool
+
+def is_arch_supported(arch):
+    try:
+        if arch == x64:
+            return True
+        elif arch == cuda:
+            return ti_with_cuda()
+        elif arch == amdgpu:
+            return ti_with_amdgpu()
+        elif arch == metal:
+            return ti_with_metal()
+        elif arch == opengl:
+            return ti_with_opengl(False)
+        elif arch == gles:
+            return ti_with_opengl(True)
+        elif arch == vulkan:
+            return ti_with_vulkan()
+        elif arch == dx11:
+            return ti_with_dx11()
+        elif arch == dx12:
+            return ti_with_dx12()
+        return False
+    except Exception as e:
+        # print(f"Error checking architecture support: {e}")
+        return False
+
+
+
+def set_logging_level(level: str):
+    """Set the logging level.
+
+    Args:
+        level (str): The logging level.
+    """
+    ti_set_logging_level(level.c_str())
+
+def get_host_arch_list():
+    return [ti_host_arch()]
+
+def adaptive_arch_select(
+    arch: Optional[int] = None,
+    enable_fallback = True
+):
+    if arch is None:
+        return cpu
+    if is_arch_supported(arch):
+        return arch
+    _logging.warn(f"Arch={arch} is not supported, falling back to CPU".c_str())
+    return cpu
+
+
+def init(arch: Optional[int] = None,enable_fallback = True):  
+    current_dir = path.getcwd()
+    cfg = impl.default_cfg()
+    ti_set_offline_cache(cfg,True);
+    ti_set_core_trigger_gdb_when_crash(False)
+    ti_set_logging_level("trace".c_str())
+    arch = adaptive_arch_select(arch, enable_fallback)
+    ti_set_arch(cfg,arch)
+    print(f"[Taichi] Starting on arch={arch_name(arch)}")
+
+    # create a new program:
+    impl.get_runtime().create_program()
+    _logging.trace("Materializing runtime...".c_str())
+    ti_materialize_runtime(unwrap(impl.get_runtime().prog))
+    # impl._root_fb = _snode.FieldsBuilder()
+    return None
+
+
+
+init(arch=cuda, enable_fallback=False)
