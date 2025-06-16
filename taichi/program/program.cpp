@@ -161,7 +161,6 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
   }
 
   Timelines::get_instance().set_enabled(config.timeline);
-
   TI_TRACE("Program ({}) arch={} initialized.", fmt::ptr(this),
            arch_name(config.arch));
 }

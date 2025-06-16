@@ -27,7 +27,6 @@
 #include "taichi/program/context.h"
 #include "taichi/struct/snode_tree.h"
 #include "taichi/system/threading.h"
-#include "taichi/program/sparse_matrix.h"
 #include "taichi/ir/mesh.h"
 
 namespace taichi::lang {
