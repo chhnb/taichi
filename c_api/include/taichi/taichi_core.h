@@ -1117,15 +1117,14 @@ TI_DLL_EXPORT TiComputeGraph TI_API_CALL
 ti_get_aot_module_compute_graph(TiAotModule aot_module, const char *name);
 
 
-using namespace taichi::lang;
 // compile config
-TI_DLL_EXPORT CompileConfig* TI_API_CALL ti_default_compile_config();
+TI_DLL_EXPORT taichi::lang::CompileConfig* TI_API_CALL ti_default_compile_config();
 TI_DLL_EXPORT int TI_API_CALL ti_get_primitive_type_by_name(const char* type_name);
-TI_DLL_EXPORT void ti_set_default_fp(CompileConfig* config, int primitive_type_id);
-TI_DLL_EXPORT void ti_set_default_ip(CompileConfig* config, int primitive_type_id);
-TI_DLL_EXPORT void ti_set_default_up(CompileConfig* config, int primitive_type_id);
-TI_DLL_EXPORT void TI_API_CALL ti_set_offline_cache(CompileConfig* config,bool enable); // Enable offline cache in frontend instead of C++ side
-TI_DLL_EXPORT void TI_API_CALL ti_set_arch(CompileConfig* config, taichi::Arch arch);
+TI_DLL_EXPORT void ti_set_default_fp(taichi::lang::CompileConfig* config, int primitive_type_id);
+TI_DLL_EXPORT void ti_set_default_ip(taichi::lang::CompileConfig* config, int primitive_type_id);
+TI_DLL_EXPORT void ti_set_default_up(taichi::lang::CompileConfig* config, int primitive_type_id);
+TI_DLL_EXPORT void TI_API_CALL ti_set_offline_cache(taichi::lang::CompileConfig* config,bool enable); // Enable offline cache in frontend instead of C++ side
+TI_DLL_EXPORT void TI_API_CALL ti_set_arch(taichi::lang::CompileConfig* config, taichi::Arch arch);
 TI_DLL_EXPORT void TI_API_CALL ti_set_core_trigger_gdb_when_crash(bool val);
 
 // Arch
@@ -1154,16 +1153,6 @@ TI_DLL_EXPORT void TI_API_CALL ti_log_warn(const char* message);
 TI_DLL_EXPORT void TI_API_CALL ti_log_error(const char* message);
 TI_DLL_EXPORT void TI_API_CALL ti_log_critical(const char* message);
 TI_DLL_EXPORT void TI_API_CALL ti_log_flush();
-
-//SNodeRegistry
-TI_DLL_EXPORT SNodeRegistry* TI_API_CALL ti_create_snode_registry();
-TI_DLL_EXPORT SNode* TI_API_CALL ti_create_root(SNodeRegistry* registry,Program *prog);
-TI_DLL_EXPORT SNodeTree* TI_API_CALL ti_finalize_snode_tree(SNodeRegistry *registry, const SNode *root, Program *program, bool compile_only);
-
-//SNodeTree
-TI_DLL_EXPORT int TI_API_CALL ti_snode_tree_id(SNodeTree *snode_tree);
-TI_DLL_EXPORT void TI_API_CALL ti_destroy_snode_tree(SNodeTree *snode_tree,Program *program);
-
 
 #ifdef __cplusplus
 }  // extern "C"
