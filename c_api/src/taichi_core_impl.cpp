@@ -1,6 +1,4 @@
 #include "taichi_core_impl.h"
-#include <string>
-#include "taichi/rhi/arch.h"
 #include "taichi_opengl_impl.h"
 #include "taichi_vulkan_impl.h"
 #include "taichi_llvm_impl.h"
@@ -1079,20 +1077,46 @@ TI_DLL_EXPORT taichi::lang::CompileConfig* TI_API_CALL ti_default_compile_config
   return &taichi::lang::default_compile_config;
 }
 
-TI_DLL_EXPORT const char* TI_API_CALL ti_get_arch_name(taichi::Arch arch) {
-  // 将arch_name的结果存储在静态变量中以避免返回临时对象的地址
-  thread_local std::string name;  
-  name = taichi::arch_name(arch);  
-  return name.c_str();  
+TI_DLL_EXPORT const char* TI_API_CALL ti_get_arch_name(Arch arch) {  
+  switch (arch) {  
+    case ARCH_X64: return "x64";  
+    case ARCH_ARM64: return "arm64";  
+    case ARCH_JS: return "js";  
+    case ARCH_CUDA: return "cuda";  
+    case ARCH_METAL: return "metal";  
+    case ARCH_OPENGL: return "opengl";  
+    case ARCH_DX11: return "dx11";  
+    case ARCH_DX12: return "dx12";  
+    case ARCH_OPENCL: return "opencl";  
+    case ARCH_AMDGPU: return "amdgpu";  
+    case ARCH_VULKAN: return "vulkan";  
+    case ARCH_GLES: return "gles";  
+    default: return "unknown";  
+  }  
+  return "unknown";  
 }
 
-taichi::Arch TI_API_CALL ti_get_arch_from_name(const char* name) {
-  std::string arch_name(name);
-  return taichi::arch_from_name(arch_name);
-}
-
-taichi::Arch TI_API_CALL ti_host_arch(){
-  return taichi::host_arch();
+TI_DLL_EXPORT Arch TI_API_CALL ti_get_arch_from_name(const char* name) {  
+  TI_CAPI_TRY_CATCH_BEGIN();  
+    
+  if (strcmp(name, "x64") == 0) return ARCH_X64;  
+  if (strcmp(name, "arm64") == 0) return ARCH_ARM64;  
+  if (strcmp(name, "js") == 0) return ARCH_JS;  
+  if (strcmp(name, "cuda") == 0) return ARCH_CUDA;  
+  if (strcmp(name, "metal") == 0) return ARCH_METAL;  
+  if (strcmp(name, "opengl") == 0) return ARCH_OPENGL;  
+  if (strcmp(name, "dx11") == 0) return ARCH_DX11;  
+  if (strcmp(name, "dx12") == 0) return ARCH_DX12;  
+  if (strcmp(name, "opencl") == 0) return ARCH_OPENCL;  
+  if (strcmp(name, "amdgpu") == 0) return ARCH_AMDGPU;  
+  if (strcmp(name, "vulkan") == 0) return ARCH_VULKAN;  
+  if (strcmp(name, "gles") == 0) return ARCH_GLES;  
+    
+  // 返回一个无效值或者抛出错误  
+  ti_set_last_error(TI_ERROR_INVALID_ARGUMENT, "Unknown architecture name");  
+  TI_CAPI_TRY_CATCH_END();  
+  return (Arch)-1;  
+  
 }
 
 void ti_set_default_fp(taichi::lang::CompileConfig* config, int primitive_type_id) {  
