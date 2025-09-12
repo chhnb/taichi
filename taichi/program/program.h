@@ -7,7 +7,6 @@
 #include <atomic>
 #include <stack>
 #include <shared_mutex>
-#include "taichi/rhi/arch.h"
 
 #define TI_RUNTIME_HOST
 #include "taichi/aot/module_builder.h"
@@ -132,8 +131,7 @@ class TI_DLL_EXPORT Program {
 
   void launch_kernel(const CompiledKernelData &compiled_kernel_data,
                      LaunchContextBuilder &ctx);
-  void launch_offline_kernel(const std::string &kernel_key, const std::string &kernel_name,Arch arch, LaunchContextBuilder &ctx);
-  void load_offline_kernels();
+
   DeviceCapabilityConfig get_device_caps() {
     return program_impl_->get_device_caps();
   }
@@ -142,7 +140,6 @@ class TI_DLL_EXPORT Program {
 
   Kernel &get_snode_writer(SNode *snode);
 
-  Kernel * get_kernel(const std::string &kernel_key, const std::string &kernel_name, Arch arch);
   uint64 fetch_result_uint64(int i);
 
   template <typename T>

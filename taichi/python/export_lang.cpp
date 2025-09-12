@@ -3,7 +3,6 @@
 #include <optional>
 #include <string>
 #include "taichi/ir/snode.h"
-#include "taichi/ir/transforms.h"
 
 #if TI_WITH_LLVM
 #include "llvm/Config/llvm-config.h"
@@ -410,11 +409,7 @@ void export_lang(py::module &m) {
           [](Program *program, const std::function<void(Kernel *)> &body,
              const std::string &name, AutodiffMode autodiff_mode) -> Kernel * {
             py::gil_scoped_release release;
-            auto kernel = &program->kernel(body, name, autodiff_mode);
-            // std::cout << kernel->get_name() << " created" << std::endl;
-            // std::cout << kernel->ir_is_ast() << std::endl;
-            // irpass::print(kernel->ir.get());
-            return kernel;
+            return &program->kernel(body, name, autodiff_mode);
           },
           py::return_value_policy::reference)
       .def("create_function", &Program::create_function,
@@ -490,9 +485,7 @@ void export_lang(py::module &m) {
       .def("compile_kernel", &Program::compile_kernel,
            py::return_value_policy::reference)
       .def("launch_kernel", &Program::launch_kernel)
-      .def("launch_offline_kernel", &Program::launch_offline_kernel)
-      .def("get_device_caps", &Program::get_device_caps)
-      .def("get_kernel",&Program::get_kernel);
+      .def("get_device_caps", &Program::get_device_caps);
 
   py::class_<AotModuleBuilder>(m, "AotModuleBuilder")
       .def("add_field", &AotModuleBuilder::add_field)
