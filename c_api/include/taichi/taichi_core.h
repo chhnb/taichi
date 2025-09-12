@@ -837,7 +837,7 @@ typedef struct TiTensor {
 // Union `TiArgumentValue` (1.4.0)
 //
 // A scalar or structured argument value.
-typedef union TiArgumentValue {
+typedef struct TiArgumentValue {
   // Value of a 32-bit one's complement signed integer. This is equivalent to
   // `union.scalar_value.x32` with `enumeration.data_type.i32`.
   int32_t i32;
@@ -847,11 +847,11 @@ typedef union TiArgumentValue {
   // An ND-array to be bound.
   TiNdArray ndarray;
   // A texture to be bound.
-  TiTexture texture;
-  // An scalar to be bound.
-  TiScalar scalar;
-  // A tensor to be bound.
-  TiTensor tensor;
+  // TiTexture texture;
+  // // An scalar to be bound.
+  // TiScalar scalar;
+  // // A tensor to be bound.
+  // TiTensor tensor;
 } TiArgumentValue;
 
 // Structure `TiArgument` (1.4.0)
@@ -1106,6 +1106,16 @@ ti_get_aot_module_kernel(TiAotModule aot_module, const char *name);
 TI_DLL_EXPORT TiComputeGraph TI_API_CALL
 ti_get_aot_module_compute_graph(TiAotModule aot_module, const char *name);
 
+// logger 
+// logger
+TI_DLL_EXPORT void TI_API_CALL ti_set_logging_level(const char* level);
+TI_DLL_EXPORT void TI_API_CALL ti_log_trace(const char* message);
+TI_DLL_EXPORT void TI_API_CALL ti_log_debug(const char* message);
+TI_DLL_EXPORT void TI_API_CALL ti_log_info(const char* message);
+TI_DLL_EXPORT void TI_API_CALL ti_log_warn(const char* message);
+TI_DLL_EXPORT void TI_API_CALL ti_log_error(const char* message);
+TI_DLL_EXPORT void TI_API_CALL ti_log_critical(const char* message);
+TI_DLL_EXPORT void TI_API_CALL ti_log_flush();
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus
