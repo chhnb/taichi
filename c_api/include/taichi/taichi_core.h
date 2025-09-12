@@ -226,10 +226,6 @@
 //
 #pragma once
 
-#include "taichi/common/platform_macros.h"
-#include "taichi/ir/snode.h"
-#include "taichi/program/snode_registry.h"
-#include "taichi/struct/snode_tree.h"
 #include "taichi/taichi_platform.h"
 #ifndef TI_C_API_VERSION
 #define TI_C_API_VERSION 1007000
@@ -239,7 +235,6 @@
 #include "taichi.h"
 #endif  // TAICHI_H
 
-#include "taichi/program/program.h"
 #include "taichi/program/compile_config.h"  
 #include "taichi/rhi/arch.h"
 
@@ -1123,26 +1118,17 @@ TI_DLL_EXPORT int TI_API_CALL ti_get_primitive_type_by_name(const char* type_nam
 TI_DLL_EXPORT void ti_set_default_fp(taichi::lang::CompileConfig* config, int primitive_type_id);
 TI_DLL_EXPORT void ti_set_default_ip(taichi::lang::CompileConfig* config, int primitive_type_id);
 TI_DLL_EXPORT void ti_set_default_up(taichi::lang::CompileConfig* config, int primitive_type_id);
-TI_DLL_EXPORT void TI_API_CALL ti_set_offline_cache(taichi::lang::CompileConfig* config,bool enable); // Enable offline cache in frontend instead of C++ side
-TI_DLL_EXPORT void TI_API_CALL ti_set_arch(taichi::lang::CompileConfig* config, taichi::Arch arch);
-TI_DLL_EXPORT void TI_API_CALL ti_set_core_trigger_gdb_when_crash(bool val);
+
 
 // Arch
 TI_DLL_EXPORT const char* TI_API_CALL ti_get_arch_name(taichi::Arch arch); 
 TI_DLL_EXPORT taichi::Arch TI_API_CALL ti_get_arch_from_name(const char* name);  
 TI_DLL_EXPORT taichi::Arch TI_API_CALL ti_host_arch();
-TI_DLL_EXPORT bool TI_API_CALL ti_with_cuda();
-TI_DLL_EXPORT bool TI_API_CALL ti_with_amdgpu();
-TI_DLL_EXPORT bool TI_API_CALL ti_with_metal();
-TI_DLL_EXPORT bool TI_API_CALL ti_with_opengl(bool use_gles);
-TI_DLL_EXPORT bool TI_API_CALL ti_with_vulkan();
-TI_DLL_EXPORT bool TI_API_CALL ti_with_dx11();
-TI_DLL_EXPORT bool TI_API_CALL ti_with_dx12();
 
 
 // Program
 TI_DLL_EXPORT taichi::lang::Program* TI_API_CALL ti_create_program();
-TI_DLL_EXPORT void TI_API_CALL ti_materialize_runtime(taichi::lang::Program* prog);
+
 
 // logger
 TI_DLL_EXPORT void TI_API_CALL ti_set_logging_level(const char* level);
