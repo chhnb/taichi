@@ -950,13 +950,7 @@ TiArgumentValue._fields_ = [
     # Value of a 32-bit IEEE 754 single-precision floating-poing number. This is equivalent to `union.scalar_value.x32` with `enumeration.data_type.f32`.
     ("f32", ctypes.c_float),
     # An ND-array to be bound.
-    ("ndarray", TiNdArray),
-    # A texture to be bound.
-    ("texture", TiTexture),
-    # An scalar to be bound.
-    ("scalar", TiScalar),
-    # A tensor to be bound.
-    ("tensor", TiTensor),
+    ("ndarray", TiNdArray)
 ]
 
 

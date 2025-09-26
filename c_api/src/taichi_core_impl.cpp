@@ -714,8 +714,7 @@ void ti_launch_kernel(TiRuntime runtime,
   TI_CAPI_ARGUMENT_NULL(kernel);
   
   // 添加调试日志
-  printf("[DEBUG] ti_launch_kernel called with %u arguments\n,args=%p", arg_count,args);
-  
+  // printf("[DEBUG] ti_launch_kernel called with %u arguments\n,args=%p\n", arg_count,args);
   if (arg_count > 0) {
     TI_CAPI_ARGUMENT_NULL(args);
   }
@@ -733,9 +732,9 @@ void ti_launch_kernel(TiRuntime runtime,
 
   for (uint32_t i = 0; i < arg_count; ++i) {
     const auto &arg = args[i];
-    
+    // printf("[DEBUG] Argument %u: data = %p\n", i, &arg);
     // 添加参数类型调试日志
-    printf("[DEBUG] Processing argument %u: type = %u\n", i, arg.type);
+    // printf("[DEBUG] Processing argument %u: type = %u\n", i, arg.type);
     
     switch (arg.type) {
       // case TI_ARGUMENT_TYPE_SCALAR: {
@@ -774,38 +773,38 @@ void ti_launch_kernel(TiRuntime runtime,
       // }
 
       case TI_ARGUMENT_TYPE_I32: {
-        printf("[DEBUG] Setting I32 arg %u = %d\n", i, arg.value.i32);
+        // printf("[DEBUG] Setting I32 arg %u = %d\n", i, arg.value.i32);
         builder.set_arg({(int)i}, arg.value.i32);
         break;
       }
       case TI_ARGUMENT_TYPE_F32: {
-        printf("[DEBUG] Setting F32 arg %u = %f\n", i, arg.value.f32);
+        // printf("[DEBUG] Setting F32 arg %u = %f\n", i, arg.value.f32);
         builder.set_arg({(int)i}, arg.value.f32);
         break;
       }
       case TI_ARGUMENT_TYPE_NDARRAY: {
-        printf("[DEBUG] memory: %d\n",args[i].value.i32);
-        printf("[DEBUG] memory: %f\n",args[i].value.f32);
-        printf("[DEBUG] memory: %p\n",args[i].value.ndarray.memory);
-        printf("[DEBUG] Processing NDARRAY argument %u\n, memory:%p", i,args[i].value.ndarray.memory);
+        // printf("[DEBUG] memory: %d\n",args[i].value.i32);
+        // printf("[DEBUG] memory: %f\n",args[i].value.f32);
+        // printf("[DEBUG] memory: %p\n",args[i].value.ndarray.memory);
+        // printf("[DEBUG] Processing NDARRAY argument %u\n, memory:%p", i,args[i].value.ndarray.memory);
         TI_CAPI_ARGUMENT_NULL(args[i].value.ndarray.memory);
         
         const TiNdArray &ndarray = arg.value.ndarray;
         
         // 添加详细的NDARRAY调试信息
-        printf("[DEBUG] NDARRAY info:\n");
-        printf("  - memory: %p\n", ndarray.memory);
-        printf("  - shape.dim_count: %u\n", ndarray.shape.dim_count);
-        printf("  - elem_shape.dim_count: %u\n", ndarray.elem_shape.dim_count);
-        printf("  - elem_type: %u\n", ndarray.elem_type);
-        printf("  - shape.dims: %p\n", &ndarray.shape.dims);
-        for (uint32_t j = 0; j < ndarray.shape.dim_count && j < 16; ++j) {
-          printf("  - shape.dims[%u]: %u\n", j, ndarray.shape.dims[j]);
-        }
+        // printf("[DEBUG] NDARRAY info:\n");
+        // printf("  - memory: %p\n", ndarray.memory);
+        // printf("  - shape.dim_count: %u\n", ndarray.shape.dim_count);
+        // printf("  - elem_shape.dim_count: %u\n", ndarray.elem_shape.dim_count);
+        // printf("  - elem_type: %u\n", ndarray.elem_type);
+        // printf("  - shape.dims: %p\n", &ndarray.shape.dims);
+        // for (uint32_t j = 0; j < ndarray.shape.dim_count && j < 16; ++j) {
+        //   printf("  - shape.dims[%u]: %u\n", j, ndarray.shape.dims[j]);
+        // }
         
-        for (uint32_t j = 0; j < ndarray.elem_shape.dim_count && j < 16; ++j) {
-          printf("  - elem_shape.dims[%u]: %u\n", j, ndarray.elem_shape.dims[j]);
-        }
+        // for (uint32_t j = 0; j < ndarray.elem_shape.dim_count && j < 16; ++j) {
+        //   printf("  - elem_shape.dims[%u]: %u\n", j, ndarray.elem_shape.dims[j]);
+        // }
 
         // Don't allocate it on stack. `DeviceAllocation` is referred to by
         // `GfxRuntime::launch_kernel`.
@@ -816,12 +815,12 @@ void ti_launch_kernel(TiRuntime runtime,
         std::vector<int> shape(ndarray.shape.dims,
                                ndarray.shape.dims + ndarray.shape.dim_count);
         
-        printf("[DEBUG] Setting NDARRAY arg %u with shape: [", i);
-        for (size_t j = 0; j < shape.size(); ++j) {
-          printf("%d", shape[j]);
-          if (j < shape.size() - 1) printf(", ");
-        }
-        printf("]\n");
+        // printf("[DEBUG] Setting NDARRAY arg %u with shape: [", i);
+        // for (size_t j = 0; j < shape.size(); ++j) {
+        //   printf("%d", shape[j]);
+        //   if (j < shape.size() - 1) printf(", ");
+        // }
+        // printf("]\n");
 
         builder.set_arg_ndarray_impl({(int)i}, (intptr_t)devalloc.get(), shape);
 
@@ -877,9 +876,9 @@ void ti_launch_kernel(TiRuntime runtime,
     }
   }
   
-  printf("[DEBUG] Launching kernel with %zu device allocations\n", devallocs.size());
+  // printf("[DEBUG] Launching kernel with %zu device allocations\n", devallocs.size());
   ti_kernel->launch(builder);
-  printf("[DEBUG] Kernel launch completed successfully\n");
+  // printf("[DEBUG] Kernel launch completed successfully\n");
   
   TI_CAPI_TRY_CATCH_END();
 }
