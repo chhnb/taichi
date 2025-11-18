@@ -4,6 +4,8 @@ add_library(cuda_codegen)
 target_sources(cuda_codegen
   PRIVATE
     codegen_cuda.cpp
+    ../cuda_c/codegen_cuda_c.cpp
+    ../cuda_c/cuda_c_kernel_compiler.cpp
   )
 
 target_include_directories(cuda_codegen

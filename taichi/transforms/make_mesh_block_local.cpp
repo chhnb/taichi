@@ -2,6 +2,7 @@
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/analysis.h"
+#include "taichi/rhi/arch.h"
 #include "taichi/transforms/make_mesh_block_local.h"
 
 namespace taichi::lang {
@@ -428,7 +429,7 @@ MakeMeshBlockLocal::MakeMeshBlockLocal(OffloadedStmt *offload,
   auto caches = irpass::analysis::initialize_mesh_local_attribute(
       offload, auto_mesh_local, config);
 
-  if (auto_mesh_local && config.arch == Arch::cuda) {
+  if (auto_mesh_local && arch_is_cuda(config.arch)) {
     const auto to_type = *offload->major_to_types.begin();
     std::size_t shared_mem_size_per_block =
         default_shared_mem_size / config.auto_mesh_local_default_occupacy;

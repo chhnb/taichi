@@ -7,6 +7,7 @@ PER_ARCH(js)     // Javascript, N/A
 
 // GPU archs
 PER_ARCH(cuda)    // NVIDIA CUDA
+PER_ARCH(cuda_c)  // NVIDIA CUDA (CUDA C backend)
 PER_ARCH(metal)   // Apple Metal
 PER_ARCH(opengl)  // OpenGL Compute Shaders
 PER_ARCH(dx11)    // Microsoft DirectX 11, WIP

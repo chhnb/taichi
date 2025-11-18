@@ -6,6 +6,7 @@
 #include "taichi/system/timeline.h"
 
 #include "taichi/rhi/amdgpu/amdgpu_profiler.h"
+#include "taichi/rhi/arch.h"
 
 namespace taichi::lang {
 
@@ -140,7 +141,7 @@ class DefaultProfiler : public KernelProfilerBase {
 std::unique_ptr<KernelProfilerBase> make_profiler(Arch arch, bool enable) {
   if (!enable)
     return nullptr;
-  if (arch == Arch::cuda) {
+  if (arch_is_cuda(arch)) {
 #if defined(TI_WITH_CUDA)
     return std::make_unique<KernelProfilerCUDA>(enable);
 #else

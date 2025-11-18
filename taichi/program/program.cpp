@@ -8,6 +8,9 @@
 #include "taichi/struct/struct.h"
 #include "taichi/runtime/program_impls/opengl/opengl_program.h"
 #include "taichi/runtime/program_impls/metal/metal_program.h"
+#ifdef TI_WITH_CUDA
+#include "taichi/runtime/program_impls/cuda_c/cuda_c_program.h"
+#endif
 #include "taichi/platform/cuda/detect_cuda.h"
 #include "taichi/system/timeline.h"
 #include "taichi/ir/snode.h"
@@ -127,6 +130,11 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
     program_impl_ = std::make_unique<OpenglProgramImpl>(config);
 #else
     TI_ERROR("This taichi is not compiled with OpenGL");
+#endif
+#ifdef TI_WITH_CUDA
+  } else if (config.arch == Arch::cuda_c) {
+    TI_ASSERT(is_cuda_api_available());
+    program_impl_ = std::make_unique<CudaCProgramImpl>(config);
 #endif
   } else {
     TI_NOT_IMPLEMENTED
@@ -380,7 +388,7 @@ Ndarray *Program::create_ndarray(const DataType type,
   auto arr = std::make_unique<Ndarray>(this, type, shape, layout, dbg_info);
   if (zero_fill) {
     Arch arch = compile_config().arch;
-    if (arch_is_cpu(arch) || arch == Arch::cuda || arch == Arch::amdgpu) {
+    if (arch_is_cpu(arch) || arch_is_cuda(arch) || arch == Arch::amdgpu) {
       fill_ndarray_fast_u32(arr.get(), /*data=*/0);
     } else if (arch != Arch::dx12) {
       // Device api support for dx12 backend are not complete yet
@@ -462,7 +470,7 @@ Texture *Program::create_texture(BufferFormat buffer_format,
 intptr_t Program::get_ndarray_data_ptr_as_int(const Ndarray *ndarray) {
   uint64_t *data_ptr{nullptr};
   if (arch_is_cpu(compile_config().arch) ||
-      compile_config().arch == Arch::cuda ||
+      arch_is_cuda(compile_config().arch) ||
       compile_config().arch == Arch::amdgpu) {
     // For the LLVM backends, device allocation is a physical pointer.
     data_ptr =

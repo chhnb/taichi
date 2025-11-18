@@ -127,7 +127,7 @@ void FrontendForStmt::init_config(Arch arch, const ForLoopConfig &config) {
   strictly_serialized = config.strictly_serialized;
   mem_access_opt = config.mem_access_opt;
   block_dim = config.block_dim;
-  if (arch == Arch::cuda || arch == Arch::amdgpu) {
+  if (arch_is_cuda(arch) || arch == Arch::amdgpu) {
     num_cpu_threads = 1;
     TI_ASSERT(block_dim <= taichi_max_gpu_block_dim);
   } else {  // cpu
@@ -1476,9 +1476,10 @@ void ASTBuilder::insert_for(const Expr &s,
 
 Expr ASTBuilder::insert_thread_idx_expr() {
   auto loop = stack_.size() ? stack_.back()->parent_stmt() : nullptr;
-  TI_ERROR_IF(
-      arch_ != Arch::cuda && !arch_is_cpu(arch_) && arch_ != Arch::amdgpu,
-      "ti.thread_idx() is only available in cuda or cpu or amdgpu context.");
+  TI_ERROR_IF(!arch_is_cuda(arch_) && !arch_is_cpu(arch_) &&
+                  arch_ != Arch::amdgpu,
+              "ti.thread_idx() is only available in cuda or cpu or amdgpu "
+              "context.");
   if (loop != nullptr) {
     auto i = stack_.size() - 1;
     while (!(loop->is<FrontendForStmt>())) {

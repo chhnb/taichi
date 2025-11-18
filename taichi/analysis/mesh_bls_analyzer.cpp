@@ -2,6 +2,7 @@
 
 #include "taichi/system/profiler.h"
 #include "taichi/ir/analysis.h"
+#include "taichi/rhi/arch.h"
 
 namespace taichi::lang {
 
@@ -38,7 +39,7 @@ void MeshBLSAnalyzer::record_access(Stmt *stmt, AccessFlag flag) {
   if (!caches_->has(snode)) {
     if (auto_mesh_local_ &&
         (flag == AccessFlag::accumulate ||
-         (flag == AccessFlag::read && config_.arch == Arch::cuda)) &&
+         (flag == AccessFlag::read && arch_is_cuda(config_.arch))) &&
         (!idx->is<LoopIndexStmt>() ||
          !idx->as<LoopIndexStmt>()->is_mesh_index())) {
       caches_->insert(snode);

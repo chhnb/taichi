@@ -60,7 +60,7 @@ void compile_to_offloads(IRNode *ir,
 
   // TODO: strictly enforce bit vectorization for x86 cpu and CUDA now
   //       create a separate CompileConfig flag for the new pass
-  if (arch_is_cpu(config.arch) || config.arch == Arch::cuda ||
+  if (arch_is_cpu(config.arch) || arch_is_cuda(config.arch) ||
       config.arch == Arch::amdgpu) {
     irpass::bit_loop_vectorize(ir);
     irpass::type_check(ir, config);
@@ -235,7 +235,7 @@ void offload_to_executable(IRNode *ir,
   if (is_extension_supported(config.arch, Extension::mesh)) {
     irpass::make_mesh_thread_local(ir, config, {kernel->get_name()});
     print("Make mesh thread local");
-    if (config.make_mesh_block_local && config.arch == Arch::cuda) {
+    if (config.make_mesh_block_local && arch_is_cuda(config.arch)) {
       irpass::make_mesh_block_local(ir, config, {kernel->get_name()});
       print("Make mesh block local");
       irpass::full_simplify(
@@ -308,7 +308,7 @@ void offload_to_executable(IRNode *ir,
   }
 
   bool half2_optimization_enabled =
-      (config.arch == Arch::cuda && config.half2_vectorization &&
+      (arch_is_cuda(config.arch) && config.half2_vectorization &&
        !get_custom_cuda_library_path().empty());
   if (config.real_matrix_scalarize) {
     if (irpass::scalarize(ir, half2_optimization_enabled)) {

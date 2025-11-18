@@ -48,7 +48,7 @@ bool arch_is_cpu(Arch arch) {
 }
 
 bool arch_is_cuda(Arch arch) {
-  return arch == Arch::cuda;
+  return arch == Arch::cuda || arch == Arch::cuda_c;
 }
 
 bool arch_uses_llvm(Arch arch) {
@@ -82,7 +82,7 @@ bool arch_use_host_memory(Arch arch) {
 int default_simd_width(Arch arch) {
   if (arch == Arch::x64) {
     return 8;
-  } else if (arch == Arch::cuda) {
+  } else if (arch == Arch::cuda || arch == Arch::cuda_c) {
     return 32;
   } else if (arch == Arch::arm64) {
     return 4;
