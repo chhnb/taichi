@@ -158,6 +158,14 @@ void compile_to_offloads(IRNode *ir,
       {false, /*autodiff_enabled*/ false, kernel->get_name(), verbose});
   print("Simplified III");
   irpass::analysis::verify(ir);
+
+  if (config.print_final_ir) {
+    TI_INFO("[{}] Final CHI IR:", kernel->get_name());
+    std::cout << std::flush;
+    irpass::re_id(ir);
+    irpass::print(ir, /*output=*/nullptr, config.print_ir_dbg_info);
+    std::cout << std::flush;
+  }
 }
 
 void offload_to_executable(IRNode *ir,
@@ -416,6 +424,13 @@ void compile_function(IRNode *ir,
                            func->get_name(), verbose});
     print("Simplified");
     irpass::analysis::verify(ir);
+    if (config.print_final_ir) {
+      TI_INFO("[{}] Final CHI IR:", func->get_name());
+      std::cout << std::flush;
+      irpass::re_id(ir);
+      irpass::print(ir, /*output=*/nullptr, config.print_ir_dbg_info);
+      std::cout << std::flush;
+    }
     func->set_ir_stage(Function::IRStage::OptimizedIR);
   }
 }

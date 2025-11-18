@@ -348,6 +348,7 @@ def init(
             * ``cpu_max_num_threads`` (int): Sets the number of threads used by the CPU thread pool.
             * ``debug`` (bool): Enables the debug mode, under which Taichi does a few more things like boundary checks.
             * ``print_ir`` (bool): Prints the CHI IR of the Taichi kernels.
+            * ``print_final_ir`` (bool): Prints the final CHI IR right before backend lowering.
             *``offline_cache`` (bool): Enables offline cache of the compiled kernels. Default to True. When this is enabled Taichi will cache compiled kernel on your local disk to accelerate future calls.
             *``random_seed`` (int): Sets the seed of the random generator. The default is 0.
     """
