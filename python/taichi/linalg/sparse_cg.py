@@ -24,7 +24,7 @@ class SparseCG:
         self.ti_arch = get_runtime().prog.config().arch
         self.matrix = A
         self.b = b
-        if self.ti_arch == _ti_core.Arch.cuda:
+        if self.ti_arch in (_ti_core.Arch.cuda, _ti_core.Arch.cuda_c):
             self.cg_solver = _ti_core.make_cucg_solver(A.matrix, max_iter, atol, True)
         elif self.ti_arch == _ti_core.Arch.x64 or self.ti_arch == _ti_core.Arch.arm64:
             if self.dtype == f32:
@@ -45,7 +45,7 @@ class SparseCG:
             raise TaichiRuntimeError(f"Unsupported CG arch: {self.ti_arch}")
 
     def solve(self):
-        if self.ti_arch == _ti_core.Arch.cuda:
+        if self.ti_arch in (_ti_core.Arch.cuda, _ti_core.Arch.cuda_c):
             if isinstance(self.b, Ndarray):
                 x = ScalarNdarray(self.b.dtype, [self.matrix.m])
                 self.cg_solver.solve(get_runtime().prog, x.arr, self.b.arr)

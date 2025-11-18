@@ -118,6 +118,11 @@ cuda = _ti_core.cuda
 """
 # ----------------------
 
+cuda_c = _ti_core.cuda_c
+"""The CUDA backend (CUDA C pipeline).
+"""
+# ----------------------
+
 amdgpu = _ti_core.amdgpu
 """The AMDGPU backend.
 """
@@ -153,9 +158,9 @@ dx12 = _ti_core.dx12
 """
 # ----------------------
 
-gpu = [cuda, metal, vulkan, opengl, dx11, dx12, gles, amdgpu]
+gpu = [cuda, cuda_c, metal, vulkan, opengl, dx11, dx12, gles, amdgpu]
 """A list of GPU backends supported on the current system.
-Currently contains 'cuda', 'metal', 'opengl', 'vulkan', 'dx11', 'dx12', 'gles', 'amdgpu'.
+Currently contains 'cuda', 'cuda_c', 'metal', 'opengl', 'vulkan', 'dx11', 'dx12', 'gles', 'amdgpu'.
 
 When this is used, Taichi automatically picks the matching GPU backend. If no
 GPU is detected, Taichi falls back to the CPU backend.
@@ -724,6 +729,7 @@ def is_arch_supported(arch):
 
     arch_table = {
         cuda: _ti_core.with_cuda,
+        cuda_c: _ti_core.with_cuda,
         amdgpu: _ti_core.with_amdgpu,
         metal: _ti_core.with_metal,
         opengl: functools.partial(_ti_core.with_opengl, False),
@@ -787,6 +793,7 @@ __all__ = [
     "arm64",
     "cpu",
     "cuda",
+    "cuda_c",
     "amdgpu",
     "gles",
     "gpu",

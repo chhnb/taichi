@@ -67,7 +67,11 @@ class Ndarray:
         Args:
             val (Union[int, float]): Value to fill.
         """
-        if impl.current_cfg().arch != _ti_core.Arch.cuda and impl.current_cfg().arch != _ti_core.Arch.x64:
+        if impl.current_cfg().arch not in (
+            _ti_core.Arch.cuda,
+            _ti_core.Arch.cuda_c,
+            _ti_core.Arch.x64,
+        ):
             self._fill_by_kernel(val)
         elif _ti_core.is_tensor(self.element_type):
             self._fill_by_kernel(val)

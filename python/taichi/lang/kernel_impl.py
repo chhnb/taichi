@@ -775,7 +775,8 @@ class Kernel:
 
                     tmp = v
                     if (str(v.device) != "cpu") and not (
-                        str(v.device).startswith("cuda") and taichi_arch == _ti_core.Arch.cuda
+                        str(v.device).startswith("cuda")
+                        and taichi_arch in (_ti_core.Arch.cuda, _ti_core.Arch.cuda_c)
                     ):
                         # Getting a torch CUDA tensor on Taichi non-cuda arch:
                         # We just replace it with a CPU tensor and by the end of kernel execution we'll use the
@@ -809,13 +810,13 @@ class Kernel:
                     tmp = v.value().get_tensor()
                     taichi_arch = self.runtime.prog.config().arch
                     if v.place.is_gpu_place():
-                        if taichi_arch != _ti_core.Arch.cuda:
+                        if taichi_arch not in (_ti_core.Arch.cuda, _ti_core.Arch.cuda_c):
                             # Paddle cuda tensor on Taichi non-cuda arch
                             host_v = v.cpu()
                             tmp = host_v.value().get_tensor()
                             callbacks.append(get_call_back(v, host_v))
                     elif v.place.is_cpu_place():
-                        if taichi_arch == _ti_core.Arch.cuda:
+                        if taichi_arch in (_ti_core.Arch.cuda, _ti_core.Arch.cuda_c):
                             # Paddle cpu tensor on Taichi cuda arch
                             gpu_v = v.cuda()
                             tmp = gpu_v.value().get_tensor()

@@ -251,6 +251,7 @@ class SparseMatrixBuilder:
                 _ti_core.Arch.x64,
                 _ti_core.Arch.arm64,
                 _ti_core.Arch.cuda,
+                _ti_core.Arch.cuda_c,
             ]:
                 self.ptr = _ti_core.SparseMatrixBuilder(
                     num_rows,
@@ -276,7 +277,7 @@ class SparseMatrixBuilder:
         taichi_arch = get_runtime().prog.config().arch
         if taichi_arch in [_ti_core.Arch.x64, _ti_core.Arch.arm64]:
             self.ptr.print_triplets_eigen()
-        elif taichi_arch == _ti_core.Arch.cuda:
+        elif taichi_arch in (_ti_core.Arch.cuda, _ti_core.Arch.cuda_c):
             self.ptr.print_triplets_cuda()
 
     def build(self, dtype=f32, _format="CSR"):
@@ -285,7 +286,7 @@ class SparseMatrixBuilder:
         if taichi_arch in [_ti_core.Arch.x64, _ti_core.Arch.arm64]:
             sm = self.ptr.build()
             return SparseMatrix(sm=sm, dtype=self.dtype)
-        if taichi_arch == _ti_core.Arch.cuda:
+        if taichi_arch in (_ti_core.Arch.cuda, _ti_core.Arch.cuda_c):
             if self.dtype != f32:
                 raise TaichiRuntimeError("CUDA sparse matrix only supports f32.")
             sm = self.ptr.build_cuda()

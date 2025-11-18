@@ -8,9 +8,13 @@ def arch_uses_spv(arch):
     return arch == _ti_core.vulkan or arch == _ti_core.metal or arch == _ti_core.opengl or arch == _ti_core.dx11
 
 
+def _is_cuda_arch(arch):
+    return arch == _ti_core.cuda or arch == _ti_core.cuda_c
+
+
 def sync():
     arch = impl.get_runtime().prog.config().arch
-    if arch == _ti_core.cuda or arch == _ti_core.amdgpu:
+    if _is_cuda_arch(arch) or arch == _ti_core.amdgpu:
         return impl.call_internal("block_barrier", with_runtime_context=False)
     if arch_uses_spv(arch):
         return impl.call_internal("workgroupBarrier", with_runtime_context=False)
@@ -19,28 +23,28 @@ def sync():
 
 def sync_all_nonzero(predicate):
     arch = impl.get_runtime().prog.config().arch
-    if arch == _ti_core.cuda:
+    if _is_cuda_arch(arch):
         return impl.call_internal("block_barrier_and_i32", predicate, with_runtime_context=False)
     raise ValueError(f"ti.block.sync_all_nonzero is not supported for arch {arch}")
 
 
 def sync_any_nonzero(predicate):
     arch = impl.get_runtime().prog.config().arch
-    if arch == _ti_core.cuda:
+    if _is_cuda_arch(arch):
         return impl.call_internal("block_barrier_or_i32", predicate, with_runtime_context=False)
     raise ValueError(f"ti.block.sync_any_nonzero is not supported for arch {arch}")
 
 
 def sync_count_nonzero(predicate):
     arch = impl.get_runtime().prog.config().arch
-    if arch == _ti_core.cuda:
+    if _is_cuda_arch(arch):
         return impl.call_internal("block_barrier_count_i32", predicate, with_runtime_context=False)
     raise ValueError(f"ti.block.sync_count_nonzero is not supported for arch {arch}")
 
 
 def mem_sync():
     arch = impl.get_runtime().prog.config().arch
-    if arch == _ti_core.cuda:
+    if _is_cuda_arch(arch):
         return impl.call_internal("block_barrier", with_runtime_context=False)
     if arch_uses_spv(arch):
         return impl.call_internal("workgroupMemoryBarrier", with_runtime_context=False)
@@ -56,7 +60,7 @@ def thread_idx():
 
 def global_thread_idx():
     arch = impl.get_runtime().prog.config().arch
-    if arch == _ti_core.cuda or _ti_core.amdgpu:
+    if _is_cuda_arch(arch) or arch == _ti_core.amdgpu:
         return impl.get_runtime().compiling_callable.ast_builder().insert_thread_idx_expr()
     if arch_uses_spv(arch):
         return impl.call_internal("globalInvocationId", with_runtime_context=False)

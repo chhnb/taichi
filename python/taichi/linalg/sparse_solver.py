@@ -30,8 +30,9 @@ class SparseSolver:
                 taichi_arch == _ti_core.Arch.x64
                 or taichi_arch == _ti_core.Arch.arm64
                 or taichi_arch == _ti_core.Arch.cuda
+                or taichi_arch == _ti_core.Arch.cuda_c
             ), "SparseSolver only supports CPU and CUDA for now."
-            if taichi_arch == _ti_core.Arch.cuda:
+            if taichi_arch in (_ti_core.Arch.cuda, _ti_core.Arch.cuda_c):
                 self.solver = _ti_core.make_cusparse_solver(dtype, solver_type, ordering)
             else:
                 self.solver = _ti_core.make_sparse_solver(dtype, solver_type, ordering)
@@ -57,7 +58,7 @@ class SparseSolver:
             taichi_arch = taichi.lang.impl.get_runtime().prog.config().arch
             if taichi_arch == _ti_core.Arch.x64 or taichi_arch == _ti_core.Arch.arm64:
                 self.solver.compute(sparse_matrix.matrix)
-            elif taichi_arch == _ti_core.Arch.cuda:
+            elif taichi_arch in (_ti_core.Arch.cuda, _ti_core.Arch.cuda_c):
                 self.analyze_pattern(self.matrix)
                 self.factorize(self.matrix)
         else:
