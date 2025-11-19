@@ -580,7 +580,18 @@ bool TaskCodeGenCudaC::emit_statement(Stmt *stmt) {
     return true;
   }
   if (auto load = stmt->cast<LocalLoadStmt>()) {
-    value_map_[stmt] = value_of(load->src);
+    auto dtype = load->ret_type.ptr_removed();
+    if (!dtype || !dtype->is<PrimitiveType>()) {
+      TI_WARN("Only primitive local loads supported in cuda_c backend");
+      return false;
+    }
+    std::string tmp =
+        fmt::format("local_load{}", local_var_counter_++);
+    body_lines_.push_back(fmt::format("    {} {} = {};",
+                                      cuda_c_data_type_name(
+                                          dtype->get_compute_type()),
+                                      tmp, value_of(load->src)));
+    value_map_[stmt] = tmp;
     return true;
   }
   if (auto ret = stmt->cast<ReturnStmt>()) {
@@ -1090,14 +1101,17 @@ bool TaskCodeGenCudaC::run_range_for(CudaCDeviceKernelInfo *info) {
       "void {}({}) {{\n"
       "{}"
       "  int linear = blockIdx.x * blockDim.x + threadIdx.x;\n"
-      "  if (linear < range_end && linear >= range_begin) {{\n"
+      "  int step = blockDim.x * gridDim.x;\n"
+      "  for (; linear < range_end; linear += step) {{\n"
+      "    if (linear >= range_begin) {{\n"
       "{}"
+      "    }}\n"
       "  }}\n"
       "}}\n",
       needs_rand_helpers_ ? kCudaCPreamble : "", kernel_name_,
       fmt::join(param_decls_, ", "),
       begin_decl + end_decl,
-      indent(block_lines()));
+      indent(indent(block_lines())));
   info->kernel_name = kernel_name_;
   info->cuda_src = std::move(source);
   info->grid_dim = grid_dim_;
@@ -1166,13 +1180,16 @@ bool TaskCodeGenCudaC::run_struct_for(CudaCDeviceKernelInfo *info) {
       "  int range_begin = 0;\n"
       "  int range_end = {};\n"
       "  int linear = blockIdx.x * blockDim.x + threadIdx.x;\n"
-      "  if (linear < range_end && linear >= range_begin) {{\n"
+      "  int step = blockDim.x * gridDim.x;\n"
+      "  for (; linear < range_end; linear += step) {{\n"
+      "    if (linear >= range_begin) {{\n"
       "{}"
+      "    }}\n"
       "  }}\n"
       "}}\n",
       needs_rand_helpers_ ? kCudaCPreamble : "", kernel_name_,
       fmt::join(param_decls_, ", "),
-      end_, indent(block_lines()));
+      end_, indent(indent(block_lines())));
   info->kernel_name = kernel_name_;
   info->cuda_src = std::move(source);
   info->grid_dim = grid_dim_;
