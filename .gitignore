@@ -90,3 +90,6 @@ imgui.ini
 .do-not-clean
 *.dylib
 *.ply
+/numba/
+/demo/output/
+/tmp.ir

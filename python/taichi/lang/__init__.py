@@ -16,6 +16,7 @@ from taichi.lang.snode import *
 from taichi.lang.source_builder import *
 from taichi.lang.struct import *
 from taichi.lang.argpack import *
+from taichi.lang.numba_typed_frontend import njit
 
 __all__ = [
     s
