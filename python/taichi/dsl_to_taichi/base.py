@@ -4,10 +4,11 @@ from .diagnostics import DiagnosticSink
 
 
 class TranslatorContext:
-    def __init__(self, target=None, ir_builder=None, capabilities=None):
+    def __init__(self, target=None, ir_builder=None, capabilities=None, kernel=None):
         self.target = target
         self.ir_builder = ir_builder
         self.capabilities = set(capabilities) if capabilities else set()
+        self.kernel = kernel
 
 
 class DSLToTaichiTranslator(ABC):

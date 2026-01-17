@@ -128,6 +128,24 @@ prime_count: 1229
 - 复杂切片/视图、动态 shape、高阶函数、部分高级 NumPy 语义
 - 更复杂的控制流图（深层嵌套 + 多 phi 变量）
 
+## 8. 如何接入更多 DSL
+
+当前推荐做法：为每个 DSL 提供一个 `DSLToTaichiTranslator` 适配器，复用统一的转换阶段接口：
+1) `parse(dsl_ir)`：读取 DSL 自身 IR，产出最小可翻译形式（或直接保留原 IR）。
+2) `lower_types()`：统一映射到 Taichi dtype。
+3) `lower_intrinsics()`：将 DSL 的 intrinsic 映射为 Taichi op/extern。
+4) `build_taichi_ir()`：调用 `ast_builder` 输出 Taichi 前端 IR。
+5) `finalize()`：校验与诊断输出。
+
+参考实现：
+- `python/taichi/lang/numba_typed_frontend/dsl_adapter.py`（`NumbaDSLTranslator`）
+- `python/taichi/dsl_to_taichi/registry.py`（注册 & 创建）
+
+新 DSL 的最小落地流程：
+- 定义 `YourDSLTranslator(DSLToTaichiTranslator)` 并注册。
+- 将 DSL IR 解析为 `parse()` 的输入结构。
+- 在 `build_taichi_ir()` 中输出相应 builder 调用序列。
+
 ## 8. 复现方式
 
 单个 demo：
