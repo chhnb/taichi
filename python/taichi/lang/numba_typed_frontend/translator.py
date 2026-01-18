@@ -1125,8 +1125,11 @@ class NumbaIRTranslator:
         if not grid_stride:
             if isinstance(step, Expr):
                 pass
-            elif step not in (1, None):
-                raise FrontendError("range step != 1 is not supported yet")
+            else:
+                if step in (0, None) or (isinstance(step, int) and step < 0):
+                    raise FrontendError("range step must be a positive constant")
+                if step != 1:
+                    raise FrontendError("range step != 1 is not supported yet")
 
         header_block = self.func_ir.blocks[label]
         loop_vars = self._collect_loop_vars(header_block, iternext_var, stmt.truebr)
