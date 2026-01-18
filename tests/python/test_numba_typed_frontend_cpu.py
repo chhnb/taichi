@@ -568,6 +568,17 @@ def test_unsupported_slice_is_diagnosed():
         ti.njit(bad)
 
 
+def test_range_negative_step_is_diagnosed():
+    _ti_cpu()
+
+    def bad(out):
+        for i in range(10, 0, -1):
+            out[i] = 1
+
+    with pytest.raises(FrontendError):
+        ti.njit(bad)(np.zeros(11, dtype=np.int32))
+
+
 def _arch_from_env():
     name = (os.environ.get("TI_TEST_ARCH") or "").strip().lower()
     if not name:
