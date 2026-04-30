@@ -484,6 +484,80 @@ bool TaskCodeGenCudaC::emit_statement(Stmt *stmt) {
       case BinaryOpType::logical_or:
         emit("||");
         return true;
+      case BinaryOpType::bit_sar:
+        emit(">>");
+        return true;
+      case BinaryOpType::max: {
+        std::string fn;
+        if (stmt->ret_type->is_primitive(PrimitiveTypeID::f64)) fn = "fmax";
+        else if (stmt->ret_type->is_primitive(PrimitiveTypeID::f32)) fn = "fmaxf";
+        else fn = "max";
+        value_map_[stmt] = fmt::format("{}({}, {})", fn, value_of(binary->lhs), value_of(binary->rhs));
+        return true;
+      }
+      case BinaryOpType::min: {
+        std::string fn;
+        if (stmt->ret_type->is_primitive(PrimitiveTypeID::f64)) fn = "fmin";
+        else if (stmt->ret_type->is_primitive(PrimitiveTypeID::f32)) fn = "fminf";
+        else fn = "min";
+        value_map_[stmt] = fmt::format("{}({}, {})", fn, value_of(binary->lhs), value_of(binary->rhs));
+        return true;
+      }
+      case BinaryOpType::pow: {
+        // Peephole: specialize constant-exponent pow to faster builtins.
+        // pow(x, 0.5) -> sqrt(x) ; pow(x, 1.5) -> x*sqrt(x)
+        // pow(x, 1/3 ish) -> cbrt(x) (HW path on sm_75+, hand-unrolls __nv_pow)
+        // pow(x, 2.0) -> x*x ; pow(x, 3.0) -> x*x*x
+        if (auto rhs_const = binary->rhs->cast<ConstStmt>()) {
+          double e = 0.0;
+          bool is_const = false;
+          if (rhs_const->ret_type->is_primitive(PrimitiveTypeID::f64)) {
+            e = rhs_const->val.val_f64; is_const = true;
+          } else if (rhs_const->ret_type->is_primitive(PrimitiveTypeID::f32)) {
+            e = rhs_const->val.val_f32; is_const = true;
+          }
+          if (is_const) {
+            const bool is_f32 = stmt->ret_type->is_primitive(PrimitiveTypeID::f32);
+            const std::string sqrt_fn = is_f32 ? "sqrtf" : "sqrt";
+            const std::string cbrt_fn = is_f32 ? "cbrtf" : "cbrt";
+            const std::string lhs = value_of(binary->lhs);
+            // tolerate 5-digit "0.33333" as 1/3
+            if (std::abs(e - 0.5) < 1e-9) {
+              value_map_[stmt] = fmt::format("{}({})", sqrt_fn, lhs);
+              return true;
+            }
+            if (std::abs(e - 1.5) < 1e-9) {
+              value_map_[stmt] = fmt::format("(({0}) * {1}({0}))", lhs, sqrt_fn);
+              return true;
+            }
+            if (std::abs(e - 1.0/3.0) < 1e-3) {
+              value_map_[stmt] = fmt::format("{}({})", cbrt_fn, lhs);
+              return true;
+            }
+            if (std::abs(e - 2.0) < 1e-9) {
+              value_map_[stmt] = fmt::format("(({0}) * ({0}))", lhs);
+              return true;
+            }
+            if (std::abs(e - 3.0) < 1e-9) {
+              value_map_[stmt] = fmt::format("(({0}) * ({0}) * ({0}))", lhs);
+              return true;
+            }
+          }
+        }
+        std::string fn;
+        if (stmt->ret_type->is_primitive(PrimitiveTypeID::f64)) fn = "pow";
+        else if (stmt->ret_type->is_primitive(PrimitiveTypeID::f32)) fn = "powf";
+        else fn = "pow";
+        value_map_[stmt] = fmt::format("{}({}, {})", fn, value_of(binary->lhs), value_of(binary->rhs));
+        return true;
+      }
+      case BinaryOpType::atan2: {
+        std::string fn;
+        if (stmt->ret_type->is_primitive(PrimitiveTypeID::f64)) fn = "atan2";
+        else fn = "atan2f";
+        value_map_[stmt] = fmt::format("{}({}, {})", fn, value_of(binary->lhs), value_of(binary->rhs));
+        return true;
+      }
       default:
         TI_WARN("Unsupported binary op {}", (int)binary->op_type);
         return false;
@@ -564,7 +638,16 @@ bool TaskCodeGenCudaC::emit_statement(Stmt *stmt) {
     return true;
   }
   if (auto load = stmt->cast<GlobalLoadStmt>()) {
-    value_map_[stmt] = value_of(load->src);
+    auto dtype = load->ret_type.ptr_removed();
+    if (dtype && dtype->is<PrimitiveType>()) {
+      std::string tmp = fmt::format("global_load{}", local_var_counter_++);
+      body_lines_.push_back(fmt::format("    {} {} = {};",
+                                         cuda_c_data_type_name(dtype->get_compute_type()),
+                                         tmp, value_of(load->src)));
+      value_map_[stmt] = tmp;
+    } else {
+      value_map_[stmt] = value_of(load->src);
+    }
     return true;
   }
   if (auto store = stmt->cast<GlobalStoreStmt>()) {
@@ -888,6 +971,18 @@ bool TaskCodeGenCudaC::emit_statement(Stmt *stmt) {
     body_lines_.push_back("    continue;");
     return true;
   }
+  if (auto ternary = stmt->cast<TernaryOpStmt>()) {
+    if (ternary->op_type == TernaryOpType::select ||
+        ternary->op_type == TernaryOpType::ifte) {
+      value_map_[stmt] = fmt::format("(({}) ? ({}) : ({}))",
+                                      value_of(ternary->op1),
+                                      value_of(ternary->op2),
+                                      value_of(ternary->op3));
+      return true;
+    }
+    TI_WARN("Unsupported ternary op {}", (int)ternary->op_type);
+    return false;
+  }
   TI_WARN("Unsupported statement id={} type={} in cuda_c backend", stmt->id,
           stmt->type());
   return false;
@@ -960,11 +1055,32 @@ std::string TaskCodeGenCudaC::get_or_make_scalar_param(
 
 std::string TaskCodeGenCudaC::const_literal(ConstStmt *stmt) {
   if (stmt->ret_type->is_primitive(PrimitiveTypeID::f32)) {
-    return fmt::format("{}", stmt->val.val_f32);
+    std::string s = fmt::format("{:.9g}", stmt->val.val_f32);
+    if (s.find('.') == std::string::npos && s.find('e') == std::string::npos
+        && s.find('n') == std::string::npos)
+      s += ".0";
+    return s + "f";
   }
-  if (stmt->ret_type->is_primitive(PrimitiveTypeID::i32)) {
+  if (stmt->ret_type->is_primitive(PrimitiveTypeID::f64))
+    return fmt::format("{:.17g}", stmt->val.val_f64);
+  if (stmt->ret_type->is_primitive(PrimitiveTypeID::i32))
     return fmt::format("{}", stmt->val.val_i32);
-  }
+  if (stmt->ret_type->is_primitive(PrimitiveTypeID::i64))
+    return fmt::format("{}LL", stmt->val.val_i64);
+  if (stmt->ret_type->is_primitive(PrimitiveTypeID::u32))
+    return fmt::format("{}u", stmt->val.val_u32);
+  if (stmt->ret_type->is_primitive(PrimitiveTypeID::u64))
+    return fmt::format("{}ULL", stmt->val.val_u64);
+  if (stmt->ret_type->is_primitive(PrimitiveTypeID::i16))
+    return fmt::format("(short){}", stmt->val.val_i16);
+  if (stmt->ret_type->is_primitive(PrimitiveTypeID::u16))
+    return fmt::format("(unsigned short){}", stmt->val.val_u16);
+  if (stmt->ret_type->is_primitive(PrimitiveTypeID::i8))
+    return fmt::format("(signed char){}", stmt->val.val_i8);
+  if (stmt->ret_type->is_primitive(PrimitiveTypeID::u8))
+    return fmt::format("(unsigned char){}", stmt->val.val_u8);
+  if (stmt->ret_type->is_primitive(PrimitiveTypeID::u1))
+    return stmt->val.val_u1 ? "true" : "false";
   TI_ERROR("Unsupported const literal type");
 }
 
@@ -1268,7 +1384,8 @@ std::vector<char> compile_cuda_c_with_nvcc(const std::string &source,
   fs::path cubin_path = tmp_dir / (kernel_name + ".cubin");
   write_text_file(cu_path, source);
   auto cmd = fmt::format(
-      "nvcc -std=c++14 -arch={} --generate-code=arch=compute_{},code=sm_{} "
+      "nvcc -std=c++14 --expt-relaxed-constexpr -O3 "
+      "-arch={} --generate-code=arch=compute_{},code=sm_{} "
       "-cubin {} -o {}",
       arch, cc, cc, cu_path.string(), cubin_path.string());
   TI_INFO(cmd);

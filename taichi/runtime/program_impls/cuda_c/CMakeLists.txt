@@ -11,5 +11,6 @@ target_include_directories(cuda_c_program_impl
     ${PROJECT_SOURCE_DIR}
     ${PROJECT_SOURCE_DIR}/external/eigen
     ${PROJECT_SOURCE_DIR}/external/spdlog/include
+    ${LLVM_INCLUDE_DIRS}
   )
 
